@@ -1,1189 +1,3 @@
-<!DOCTYPE html>
-<html lang="en">
-<head><script data-tmly-media-guard="1">(function(){"use strict";
-var T=window.__tmly||(window.__tmly=(function(){
-var o={},n=String(window.name||"");
-if(n.slice(0,5)==="tmly:"){n.slice(5).split("&").forEach(function(kv){
-var i=kv.indexOf("=");if(i>0){o[kv.slice(0,i)]=kv.slice(i+1)}})}
-return o})());
-if(T.presentation!=="preview"){return}
-var K="tmly:media-muted:"+String(location.pathname).replace(/[^/]*$/,"");
-var muted=false;try{muted=localStorage.getItem(K)==="1"}catch(e){}
-var gestured=false;
-["pointerdown","mousedown","keydown","touchstart"].forEach(function(t){
-document.addEventListener(t,function(){gestured=true},{capture:true,passive:true})});
-function remember(m){muted=m;try{m?localStorage.setItem(K,"1"):localStorage.removeItem(K)}catch(e){}}
-function announcePaused(el){try{el.dispatchEvent(new Event("pause"))}catch(e){}}
-function harden(el){
-el.autoplay=false;el.removeAttribute("autoplay");
-if(el.getAttribute("preload")==="auto"){el.setAttribute("preload","none")}
-if(muted){el.muted=true}
-if(!gestured&&!el.paused){try{el.pause()}catch(e){}}}
-var play=HTMLMediaElement.prototype.play;
-HTMLMediaElement.prototype.play=function(){
-if(!gestured){announcePaused(this);
-return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
-if(muted){remember(false);this.muted=false}
-return play.apply(this,arguments)};
-var acProtos=[];
-function guardAC(n){
-var N=window[n];if(!N||!N.prototype){return}
-if(acProtos.indexOf(N.prototype)<0){acProtos.push(N.prototype);
-var res=N.prototype.resume;
-if(typeof res==="function"){N.prototype.resume=function(){
-if(!gestured){return Promise.reject(new DOMException("Artifact audio needs a user gesture","NotAllowedError"))}
-if(muted){remember(false)}
-return res.apply(this,arguments)}}}
-var W=function(o){var c=arguments.length?new N(o):new N();
-if(!gestured){try{c.suspend()}catch(e){}}return c};
-W.prototype=N.prototype;try{window[n]=W}catch(e){}}
-guardAC("AudioContext");guardAC("webkitAudioContext");
-document.addEventListener("play",function(e){
-var el=e.target;if(el instanceof HTMLMediaElement&&!gestured){try{el.pause()}catch(err){}}},true);
-document.addEventListener("pause",function(e){
-if(e.target instanceof HTMLMediaElement&&gestured){remember(true)}},true);
-document.addEventListener("volumechange",function(e){
-var el=e.target;if(el instanceof HTMLMediaElement&&gestured){remember(el.muted||el.volume===0)}},true);
-function sweep(n){if(n&&n.querySelectorAll){var l=n.querySelectorAll("audio,video");
-for(var i=0;i<l.length;i++){harden(l[i])}}}
-new MutationObserver(function(rs){for(var i=0;i<rs.length;i++){var a=rs[i].addedNodes;
-for(var j=0;j<a.length;j++){var n=a[j];
-if(n instanceof HTMLMediaElement){harden(n)}else{sweep(n)}}}})
-.observe(document.documentElement,{childList:true,subtree:true});
-document.addEventListener("DOMContentLoaded",function(){sweep(document)});
-sweep(document)})();</script>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-<meta name="theme-color" content="#060a18" />
-<title>Astronaut Jr — Space Academy for Young Explorers</title>
-<meta name="description" content="Astronaut Jr is a kid-friendly space academy: 15 training missions, all 8 planets, a robot guide called Pip-0 who reads the lessons aloud, and a character shop with 100+ outfits powered by the stars you earn." />
-<style>
-/* ============================================================
-   ASTROCADET — design system
-   ============================================================ */
-:root{
-  --bg:#060a18;
-  --bg-2:#0a1024;
-  --panel:#0f1730;
-  --panel-2:#121d3c;
-  --panel-3:#17244a;
-  --line:rgba(126,168,255,.15);
-  --line-strong:rgba(126,168,255,.32);
-  --ink:#eaf1ff;
-  --ink-dim:#a7b6da;
-  --ink-faint:#7486ad;
-  --cyan:#4fe3ff;
-  --mint:#5ff0b6;
-  --amber:#ffc857;
-  --coral:#ff7d7d;
-  --violet:#a99bff;
-  --r-sm:12px;
-  --r:18px;
-  --r-lg:26px;
-  --shadow:0 24px 60px -32px rgba(0,0,0,.95);
-  --font:"Trebuchet MS","Segoe UI Variable","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
-}
-
-*,*::before,*::after{box-sizing:border-box}
-html,body{margin:0;padding:0}
-html{-webkit-text-size-adjust:100%}
-body{
-  min-height:100vh;
-  background:var(--bg);
-  color:var(--ink);
-  font-family:var(--font);
-  font-size:16px;
-  line-height:1.55;
-  -webkit-font-smoothing:antialiased;
-  overflow-x:hidden;
-}
-body.is-locked{overflow:hidden}
-h1,h2,h3,h4,h5,p{margin:0}
-button{font-family:inherit}
-a{color:var(--cyan)}
-img,svg{display:block;max-width:100%}
-:focus-visible{outline:2px solid var(--cyan);outline-offset:3px;border-radius:10px}
-.sr-only{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
-
-#starfield{position:fixed;inset:0;width:100%;height:100%;z-index:0;pointer-events:none}
-.nebula{
-  position:fixed;inset:0;z-index:0;pointer-events:none;
-  background:
-    radial-gradient(900px 620px at 12% -10%, rgba(79,227,255,.13), transparent 62%),
-    radial-gradient(780px 520px at 92% 4%, rgba(255,200,87,.10), transparent 60%),
-    radial-gradient(900px 700px at 60% 108%, rgba(95,240,182,.09), transparent 62%);
-}
-
-/* ---------- top bar ---------- */
-.topbar{
-  position:sticky;top:0;z-index:40;
-  background:rgba(7,11,26,.82);
-  backdrop-filter:blur(18px) saturate(140%);
-  border-bottom:1px solid var(--line);
-}
-.topbar-inner{
-  max-width:1180px;margin:0 auto;padding:12px 18px;
-  display:flex;align-items:center;justify-content:space-between;gap:14px;
-}
-.brand{
-  display:flex;align-items:center;gap:12px;background:none;border:0;
-  padding:0;cursor:pointer;color:inherit;text-align:left;
-}
-.logo{
-  width:46px;height:46px;border-radius:15px;flex:none;
-  display:grid;place-items:center;
-  background:linear-gradient(150deg,#1a2a55,#0c1730);
-  border:1px solid rgba(79,227,255,.45);
-  box-shadow:0 0 0 1px rgba(79,227,255,.12) inset,0 12px 26px -14px rgba(79,227,255,.9);
-}
-.logo svg{width:28px;height:28px}
-.brand-text{display:flex;flex-direction:column;line-height:1.1}
-.brand-name{
-  font-size:1.3rem;font-weight:800;letter-spacing:-.02em;
-  background:linear-gradient(92deg,#8df3ff,#e9f4ff 55%,#ffd98a);
-  -webkit-background-clip:text;background-clip:text;color:transparent;
-}
-.brand-sub{font-size:.7rem;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-faint);margin-top:3px}
-
-.hud{display:flex;align-items:center;gap:9px}
-.hud-stat{
-  display:flex;align-items:center;gap:9px;
-  background:rgba(255,200,87,.09);
-  border:1px solid rgba(255,200,87,.35);
-  border-radius:999px;padding:6px 14px 6px 10px;
-  color:var(--amber);
-}
-.hud-ico{font-size:1rem;filter:drop-shadow(0 0 8px rgba(255,200,87,.7))}
-.hud-stat b{font-size:1.05rem;font-weight:800;letter-spacing:-.01em}
-.hud-stat small{display:block;font-size:.6rem;letter-spacing:.12em;text-transform:uppercase;color:rgba(255,200,87,.72);line-height:1}
-.hud-rank{display:none;flex-direction:column;gap:5px;min-width:132px}
-.hud-rank span:first-child{font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--ink-dim)}
-.rankbar{height:6px;border-radius:99px;background:rgba(126,168,255,.14);overflow:hidden;display:block}
-.rankbar i{display:block;height:100%;width:0;border-radius:99px;background:linear-gradient(90deg,var(--cyan),var(--mint));transition:width .7s cubic-bezier(.2,.8,.3,1)}
-.icon-btn{
-  width:42px;height:42px;flex:none;display:grid;place-items:center;
-  border-radius:13px;border:1px solid var(--line);background:rgba(126,168,255,.07);
-  color:var(--ink);font-size:1rem;cursor:pointer;transition:background .18s,transform .18s;
-}
-.icon-btn:hover{background:rgba(126,168,255,.16);transform:translateY(-1px)}
-
-/* ---------- nav tabs ---------- */
-.tabs{
-  max-width:1180px;margin:0 auto;padding:0 18px 10px;
-  display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;
-}
-.tabs::-webkit-scrollbar{display:none}
-.tab{
-  flex:none;display:inline-flex;align-items:center;gap:7px;
-  padding:9px 16px;min-height:42px;border-radius:999px;cursor:pointer;
-  border:1px solid transparent;background:transparent;color:var(--ink-dim);
-  font-size:.9rem;font-weight:700;white-space:nowrap;transition:all .18s;
-}
-.tab:hover{color:var(--ink);background:rgba(126,168,255,.09)}
-.tab.is-active{
-  color:#04121a;background:var(--cyan);
-  box-shadow:0 10px 24px -14px var(--cyan);
-  border-color:transparent;
-}
-
-/* ---------- layout ---------- */
-main{position:relative;z-index:1;padding:22px 18px 120px;max-width:1180px;margin:0 auto}
-.view{display:none}
-.view.is-active{display:block;animation:viewIn .4s cubic-bezier(.2,.8,.3,1) both}
-@keyframes viewIn{from{opacity:0;transform:translateY(12px)}to{opacity:1;transform:none}}
-
-/* ---------- hero ---------- */
-.hero{
-  position:relative;overflow:hidden;
-  border-radius:var(--r-lg);
-  border:1px solid var(--line-strong);
-  background:
-    radial-gradient(700px 340px at 88% -30%, rgba(79,227,255,.18), transparent 65%),
-    linear-gradient(160deg,#16224a,#0c142b 62%);
-  padding:26px;display:grid;grid-template-columns:1fr;gap:20px;
-  box-shadow:var(--shadow);
-}
-.hero::after{
-  content:"";position:absolute;right:-90px;bottom:-140px;width:340px;height:340px;
-  border-radius:50%;border:1px dashed rgba(126,168,255,.18);
-  box-shadow:0 0 0 44px rgba(126,168,255,.04),0 0 0 100px rgba(126,168,255,.025);
-  pointer-events:none;
-}
-.eyebrow{
-  display:inline-flex;align-items:center;gap:8px;
-  font-size:.68rem;letter-spacing:.18em;text-transform:uppercase;
-  color:var(--cyan);background:rgba(79,227,255,.1);
-  border:1px solid rgba(79,227,255,.3);border-radius:999px;padding:5px 12px;
-}
-.hero h2{
-  font-size:clamp(1.65rem,4.4vw,2.5rem);line-height:1.1;
-  letter-spacing:-.025em;margin:14px 0 10px;font-weight:800;
-}
-.hero h2 em{font-style:normal;color:var(--amber)}
-.hero p{color:var(--ink-dim);max-width:52ch;font-size:.98rem}
-.hero-actions{display:flex;flex-wrap:wrap;gap:10px;margin-top:20px}
-.hero-visual > svg{width:100%;max-width:270px;height:auto;margin:0 auto}
-.hero-visual{position:relative;display:grid;place-items:center;min-height:210px}
-
-/* ---------- buttons ---------- */
-.btn{
-  display:inline-flex;align-items:center;justify-content:center;gap:8px;
-  min-height:44px;padding:10px 18px;border-radius:999px;
-  border:1px solid transparent;cursor:pointer;
-  font-size:.93rem;font-weight:800;letter-spacing:.01em;
-  transition:transform .16s cubic-bezier(.2,.8,.3,1),box-shadow .2s,background .2s,opacity .2s;
-}
-.btn:hover{transform:translateY(-2px)}
-.btn:active{transform:translateY(0) scale(.985)}
-.btn[disabled]{opacity:.45;cursor:not-allowed;transform:none}
-.btn-primary{background:var(--cyan);color:#04121a;box-shadow:0 14px 30px -16px rgba(79,227,255,.95)}
-.btn-amber{background:var(--amber);color:#241703;box-shadow:0 14px 30px -16px rgba(255,200,87,.9)}
-.btn-mint{background:var(--mint);color:#03231a;box-shadow:0 14px 30px -16px rgba(95,240,182,.9)}
-.btn-ghost{background:rgba(126,168,255,.08);border-color:var(--line-strong);color:var(--ink)}
-.btn-ghost:hover{background:rgba(126,168,255,.16)}
-.btn-sm{min-height:36px;padding:7px 13px;font-size:.8rem}
-.btn-block{width:100%}
-
-/* ---------- progress strip ---------- */
-.strip{
-  margin-top:18px;display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
-}
-.strip-cell{
-  background:rgba(15,23,48,.72);border:1px solid var(--line);
-  border-radius:var(--r);padding:13px 15px;
-}
-.strip-cell b{display:block;font-size:1.35rem;font-weight:800;letter-spacing:-.02em}
-.strip-cell span{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
-.strip-cell.accent b{color:var(--amber)}
-.strip-cell.mint b{color:var(--mint)}
-
-/* ---------- section heading ---------- */
-.sec-head{display:flex;align-items:flex-end;justify-content:space-between;gap:14px;margin:30px 0 14px;flex-wrap:wrap}
-.sec-head h2{font-size:clamp(1.2rem,3vw,1.55rem);letter-spacing:-.02em;font-weight:800}
-.sec-head p{color:var(--ink-faint);font-size:.88rem;margin-top:4px}
-.sec-head .link{background:none;border:0;color:var(--cyan);font-weight:700;font-size:.85rem;cursor:pointer;padding:6px}
-
-/* ---------- mission map ---------- */
-.mission-grid{display:grid;grid-template-columns:1fr;gap:14px}
-.mission-card{
-  position:relative;text-align:left;cursor:pointer;overflow:hidden;
-  border-radius:var(--r-lg);padding:18px;
-  border:1px solid var(--line);
-  background:linear-gradient(165deg,rgba(23,36,74,.9),rgba(12,20,43,.94));
-  color:inherit;font-family:inherit;
-  transition:transform .22s cubic-bezier(.2,.8,.3,1),border-color .22s,box-shadow .22s;
-}
-.mission-card::before{
-  content:"";position:absolute;inset:0 auto 0 0;width:4px;
-  background:hsl(var(--hue,190) 92% 62%);opacity:.85;
-}
-.mission-card::after{
-  content:"";position:absolute;right:-40px;top:-40px;width:140px;height:140px;
-  border-radius:50%;background:radial-gradient(circle,hsl(var(--hue,190) 92% 62% / .18),transparent 70%);
-  pointer-events:none;
-}
-.mission-card:hover{transform:translateY(-4px);border-color:var(--line-strong);box-shadow:0 24px 44px -30px rgba(0,0,0,.95)}
-.mission-card.is-locked{cursor:not-allowed;opacity:.62;background:linear-gradient(165deg,rgba(18,26,52,.7),rgba(10,16,34,.85))}
-.mission-card.is-locked:hover{transform:none;border-color:var(--line)}
-.mission-card.is-done{border-color:rgba(95,240,182,.32)}
-.m-top{display:flex;align-items:center;gap:10px;margin-bottom:12px}
-.m-orb{
-  width:46px;height:46px;border-radius:50%;flex:none;display:grid;place-items:center;
-  font-size:1.2rem;font-weight:800;color:#061020;
-  background:radial-gradient(circle at 32% 28%,hsl(var(--hue,190) 100% 82%),hsl(var(--hue,190) 88% 56%));
-  box-shadow:0 0 0 4px hsl(var(--hue,190) 90% 60% / .12),0 10px 20px -12px hsl(var(--hue,190) 90% 60%);
-}
-.mission-card.is-locked .m-orb{background:#2a3559;color:#7d8db5;box-shadow:none}
-.m-num{font-size:.68rem;letter-spacing:.16em;text-transform:uppercase;color:var(--ink-faint)}
-.m-status{
-  margin-left:auto;font-size:.66rem;font-weight:800;letter-spacing:.1em;
-  text-transform:uppercase;padding:5px 10px;border-radius:999px;
-  border:1px solid var(--line);color:var(--ink-dim);white-space:nowrap;
-}
-.m-status.done{color:#03231a;background:var(--mint);border-color:transparent}
-.m-status.ready{color:#04121a;background:var(--cyan);border-color:transparent}
-.m-status.locked{color:var(--ink-faint)}
-.mission-card h3{font-size:1.06rem;font-weight:800;letter-spacing:-.01em;line-height:1.25}
-.mission-card .m-sub{font-size:.82rem;color:var(--ink-dim);margin-top:4px;min-height:2.4em}
-.m-meta{display:flex;align-items:center;gap:12px;margin-top:14px;font-size:.74rem;color:var(--ink-faint)}
-.m-meta i{font-style:normal;color:var(--ink-dim)}
-.m-dots{display:flex;gap:4px;margin-left:auto}
-.m-dot{width:7px;height:7px;border-radius:50%;background:rgba(126,168,255,.22)}
-.m-dot.on{background:var(--mint)}
-
-/* ---------- planet cards ---------- */
-.planet-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
-.planet-grid > *{min-width:0}
-.planet-card{
-  position:relative;cursor:pointer;border-radius:var(--r);padding:15px 13px 13px;
-  border:1px solid var(--line);background:rgba(15,23,48,.7);
-  display:flex;flex-direction:column;align-items:center;gap:8px;
-  color:inherit;font-family:inherit;text-align:center;
-  transition:transform .2s,border-color .2s,background .2s;
-}
-.planet-card:hover{transform:translateY(-3px);border-color:var(--line-strong);background:rgba(23,36,74,.8)}
-.planet-card .pv{width:74px;height:74px;display:grid;place-items:center}
-.planet-card h4{font-size:.92rem;font-weight:800}
-.planet-card small{font-size:.68rem;color:var(--ink-faint);letter-spacing:.06em;text-transform:uppercase}
-.planet-card .seen{
-  position:absolute;top:9px;right:9px;font-size:.6rem;color:var(--mint);
-  background:rgba(95,240,182,.12);border:1px solid rgba(95,240,182,.35);
-  border-radius:99px;padding:2px 7px;
-}
-
-/* ---------- sheets / overlays ---------- */
-.overlay{
-  position:fixed;inset:0;z-index:70;display:none;
-  padding:16px;background:rgba(4,7,18,.78);
-  backdrop-filter:blur(14px) saturate(120%);
-  overflow-y:auto;
-}
-.overlay.is-open{display:grid;place-items:center;animation:fadeIn .22s ease both}
-@keyframes fadeIn{from{opacity:0}to{opacity:1}}
-.sheet{
-  width:100%;max-width:960px;background:var(--bg-2);
-  border:1px solid var(--line-strong);border-radius:var(--r-lg);
-  box-shadow:var(--shadow);overflow:hidden;
-  display:flex;flex-direction:column;max-height:92vh;
-  animation:sheetIn .3s cubic-bezier(.2,.8,.3,1) both;
-}
-@keyframes sheetIn{from{opacity:0;transform:translateY(20px) scale(.99)}to{opacity:1;transform:none}}
-.sheet.narrow{max-width:520px}
-.sheet-head{
-  display:flex;align-items:center;gap:12px;padding:14px 18px;
-  border-bottom:1px solid var(--line);background:rgba(10,16,36,.9);
-  position:sticky;top:0;z-index:3;
-}
-.sheet-head h3{font-size:1.02rem;font-weight:800;letter-spacing:-.01em;line-height:1.2}
-.sheet-head small{display:block;font-size:.7rem;color:var(--ink-faint);letter-spacing:.1em;text-transform:uppercase;margin-top:2px}
-.sheet-head .spacer{margin-left:auto}
-.sheet-body{padding:18px 18px 30px;overflow-y:auto}
-.sheet-foot{
-  padding:14px 18px;border-top:1px solid var(--line);background:rgba(10,16,36,.92);
-  display:flex;gap:10px;align-items:center;flex-wrap:wrap;
-}
-.close-x{
-  width:40px;height:40px;border-radius:12px;border:1px solid var(--line);
-  background:rgba(126,168,255,.07);color:var(--ink-dim);cursor:pointer;font-size:1.05rem;
-  display:grid;place-items:center;flex:none;transition:all .18s;
-}
-.close-x:hover{background:rgba(255,125,125,.15);color:#ffd9d9;border-color:rgba(255,125,125,.4)}
-
-/* ---------- lesson ---------- */
-.lesson-dots{display:flex;gap:6px;margin-left:auto}
-.lesson-dots i{width:22px;height:5px;border-radius:99px;background:rgba(126,168,255,.2);display:block;transition:background .3s}
-.lesson-dots i.on{background:var(--cyan)}
-.lesson-wrap{display:grid;gap:18px}
-.lesson-art{
-  border-radius:var(--r);overflow:hidden;background:
-    radial-gradient(420px 220px at 50% 0%,rgba(79,227,255,.14),transparent 70%),
-    linear-gradient(160deg,#101a38,#0a1024);
-  border:1px solid var(--line);padding:10px;display:grid;place-items:center;min-height:190px;
-}
-.lesson-art svg{width:100%;height:auto;max-height:250px}
-.lesson-copy h3{font-size:clamp(1.2rem,3.2vw,1.6rem);letter-spacing:-.02em;font-weight:800;margin-bottom:10px}
-.lesson-copy p{color:var(--ink-dim);font-size:.96rem;line-height:1.65}
-.lesson-copy p + p{margin-top:12px}
-.lesson-note{
-  margin-top:16px;border-left:3px solid var(--amber);padding:10px 14px;
-  background:rgba(255,200,87,.07);border-radius:0 12px 12px 0;
-  font-size:.88rem;color:#ffe9bd;
-}
-.lesson-note b{color:var(--amber)}
-
-/* ---------- activity ---------- */
-.activity-head{display:flex;align-items:center;gap:10px;margin-bottom:14px;flex-wrap:wrap}
-.pill{
-  font-size:.68rem;letter-spacing:.12em;text-transform:uppercase;font-weight:800;
-  padding:5px 11px;border-radius:999px;border:1px solid var(--line);
-  color:var(--cyan);background:rgba(79,227,255,.08);
-}
-.pill.amber{color:var(--amber);background:rgba(255,200,87,.09);border-color:rgba(255,200,87,.3)}
-.pill.mint{color:var(--mint);background:rgba(95,240,182,.09);border-color:rgba(95,240,182,.3)}
-.activity-box{
-  border-radius:var(--r);border:1px solid var(--line);
-  background:linear-gradient(170deg,#0b132b,#080d1e);
-  padding:16px;min-height:280px;position:relative;overflow:hidden;
-}
-.activity-hint{font-size:.9rem;color:var(--ink-dim);margin-bottom:14px}
-.activity-hint b{color:var(--cyan)}
-
-/* constellation activity */
-.sky{position:relative;height:250px;border-radius:14px;background:radial-gradient(120% 100% at 50% 0%,#0d1733,#050a18);border:1px solid rgba(126,168,255,.14);overflow:hidden}
-.sky-star{
-  position:absolute;width:44px;height:44px;margin:-22px 0 0 -22px;border-radius:50%;
-  border:2px solid rgba(126,168,255,.35);background:#1b2748;color:#93a6cd;
-  font-weight:800;cursor:pointer;display:grid;place-items:center;font-size:.9rem;
-  transition:all .25s;z-index:2;
-}
-.sky-star.next{background:radial-gradient(circle at 35% 30%,#fff3c4,#ffc857);color:#241703;border-color:#fff0bf;box-shadow:0 0 22px rgba(255,200,87,.75)}
-.sky-star.done{background:radial-gradient(circle at 35% 30%,#d3fff0,#5ff0b6);color:#03231a;border-color:#c8ffe8;box-shadow:0 0 18px rgba(95,240,182,.6);cursor:default}
-.sky-star.wrong{animation:shake .38s}
-.sky-lines{position:absolute;inset:0;width:100%;height:100%;z-index:1;pointer-events:none}
-@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
-
-/* rocket / slider */
-.rocket-stage{position:relative;height:180px;display:grid;place-items:center;overflow:hidden;border-radius:14px;background:radial-gradient(70% 100% at 50% 110%,rgba(79,227,255,.14),transparent 70%)}
-.rocket-emoji{font-size:3.4rem;transition:transform .25s ease-out;filter:drop-shadow(0 12px 20px rgba(79,227,255,.35))}
-.range{width:100%;accent-color:#4fe3ff;height:28px}
-.thrust-read{display:flex;justify-content:space-between;font-size:.8rem;color:var(--ink-faint);margin-top:4px}
-.thrust-read b{color:var(--amber);font-size:1rem}
-
-/* switches */
-.switch-row{display:grid;grid-template-columns:1fr;gap:10px}
-.switch{
-  display:flex;align-items:center;gap:12px;justify-content:space-between;
-  border-radius:14px;border:1px solid rgba(255,125,125,.4);background:rgba(255,125,125,.06);
-  padding:13px 15px;cursor:pointer;font-weight:800;color:#ffc9c9;font-size:.9rem;transition:all .22s;
-}
-.switch small{display:block;font-weight:600;font-size:.7rem;color:rgba(255,201,201,.65);letter-spacing:.04em;text-transform:uppercase}
-.switch .knob{width:44px;height:24px;border-radius:99px;background:rgba(255,125,125,.35);position:relative;flex:none;transition:background .22s}
-.switch .knob::after{content:"";position:absolute;top:3px;left:3px;width:18px;height:18px;border-radius:50%;background:#fff;transition:transform .22s}
-.switch.on{border-color:rgba(95,240,182,.5);background:rgba(95,240,182,.09);color:#c9ffee}
-.switch.on small{color:rgba(201,255,238,.7)}
-.switch.on .knob{background:var(--mint)}
-.switch.on .knob::after{transform:translateX(20px)}
-
-/* zero g catcher */
-.float-field{position:relative;height:250px;border-radius:14px;background:radial-gradient(90% 80% at 50% 50%,#0e1a38,#060b1a);border:1px solid rgba(126,168,255,.14);overflow:hidden;cursor:crosshair}
-.float-item{position:absolute;width:54px;height:54px;display:grid;place-items:center;border-radius:50%;font-size:1.6rem;background:rgba(126,168,255,.1);border:1px solid rgba(126,168,255,.28);cursor:pointer;transition:transform .2s,opacity .2s}
-.float-item:hover{transform:scale(1.12)}
-.float-item.caught{opacity:0;pointer-events:none;transform:scale(.4)}
-
-/* lander */
-.lander-field{position:relative;height:270px;border-radius:14px;overflow:hidden;background:radial-gradient(120% 80% at 50% 0%,#0b1530,#05080f);border:1px solid rgba(126,168,255,.14)}
-.moon-ground{position:absolute;left:0;right:0;bottom:0;height:52px;background:linear-gradient(180deg,#4c5670,#2b3245);border-top:2px solid #93a0bd}
-.moon-ground::before{content:"";position:absolute;top:8px;left:8%;width:38px;height:10px;border-radius:50%;background:rgba(0,0,0,.22)}
-.moon-ground::after{content:"";position:absolute;top:18px;right:14%;width:26px;height:8px;border-radius:50%;background:rgba(0,0,0,.22)}
-.lander{position:absolute;left:50%;transform:translateX(-50%);font-size:2.4rem;transition:bottom .12s linear;filter:drop-shadow(0 8px 14px rgba(255,200,87,.3))}
-.lander-hud{position:absolute;top:12px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:.74rem;color:var(--ink-dim);z-index:2}
-.lander-hud b{display:block;font-size:1rem;color:var(--ink)}
-.flame{position:absolute;left:50%;transform:translateX(-50%);top:100%;width:12px;height:26px;border-radius:50% 50% 60% 60%;background:linear-gradient(180deg,#ffe6a8,#ff9d3d,transparent);opacity:0;transition:opacity .08s}
-.flame.on{opacity:1}
-
-/* orbit activity */
-.orbit-stage{position:relative;height:260px;border-radius:14px;overflow:hidden;background:radial-gradient(70% 70% at 50% 50%,#0d1a36,#05080f);border:1px solid rgba(126,168,255,.14);display:grid;place-items:center}
-.orbit-earth{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px}
-.orbit-path{position:absolute;left:50%;top:50%;border:1px dashed rgba(126,168,255,.28);border-radius:50%;transform:translate(-50%,-50%)}
-.orbit-sat{position:absolute;left:50%;top:50%;width:16px;height:16px;border-radius:4px;background:var(--amber);box-shadow:0 0 14px var(--amber)}
-.orbit-read{position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-faint)}
-
-/* checklist */
-.check-list{display:grid;gap:9px}
-.check-item{
-  display:flex;align-items:center;gap:11px;text-align:left;
-  border-radius:13px;border:1px solid var(--line);background:rgba(18,29,60,.7);
-  padding:12px 14px;cursor:pointer;color:var(--ink);font-weight:700;font-size:.88rem;
-  transition:all .18s;
-}
-.check-item:hover{border-color:var(--line-strong);background:rgba(23,36,74,.9)}
-.check-item .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(126,168,255,.14);font-size:.76rem;color:var(--ink-dim)}
-.check-item.done{border-color:rgba(95,240,182,.45);background:rgba(95,240,182,.1);color:#d3fff0}
-.check-item.done .num{background:var(--mint);color:#03231a}
-.check-item.bad{animation:shake .35s;border-color:rgba(255,125,125,.6)}
-
-/* ---------- quiz ---------- */
-.quiz-wrap{margin-top:18px;border-top:1px solid var(--line);padding-top:18px}
-.quiz-top{display:flex;align-items:center;gap:10px;margin-bottom:6px}
-.quiz-top h4{font-size:.82rem;letter-spacing:.14em;text-transform:uppercase;color:var(--amber);font-weight:800}
-.quiz-step{margin-left:auto;font-size:.75rem;color:var(--ink-faint)}
-.q-text{font-size:clamp(1.02rem,2.6vw,1.2rem);font-weight:800;line-height:1.35;letter-spacing:-.01em;margin:10px 0 14px}
-.q-options{display:grid;gap:9px}
-.q-option{
-  display:flex;align-items:center;gap:11px;text-align:left;
-  border-radius:14px;border:1px solid var(--line-strong);background:rgba(18,29,60,.75);
-  padding:13px 15px;cursor:pointer;color:var(--ink);font-weight:700;font-size:.92rem;
-  transition:all .18s;
-}
-.q-option:hover:not([disabled]){background:rgba(30,46,88,.9);border-color:var(--cyan);transform:translateX(2px)}
-.q-option .ltr{
-  width:26px;height:26px;flex:none;border-radius:8px;display:grid;place-items:center;
-  background:rgba(126,168,255,.14);font-size:.75rem;color:var(--ink-dim);font-weight:800;
-}
-.q-option[disabled]{cursor:default;opacity:.75}
-.q-option.correct{background:rgba(95,240,182,.16);border-color:var(--mint);color:#dbfff2;opacity:1}
-.q-option.correct .ltr{background:var(--mint);color:#03231a}
-.q-option.wrong{background:rgba(255,125,125,.12);border-color:rgba(255,125,125,.7);color:#ffdede;opacity:1}
-.q-option.wrong .ltr{background:var(--coral);color:#2a0505}
-.q-option.dim{opacity:.45}
-.quiz-tools{display:flex;gap:8px;flex-wrap:wrap;margin-top:14px;align-items:center}
-.hint-box{
-  margin-top:12px;padding:12px 14px;border-radius:12px;
-  background:rgba(255,200,87,.08);border:1px solid rgba(255,200,87,.3);
-  font-size:.88rem;color:#ffecc4;animation:viewIn .3s both;
-}
-.hint-box b{color:var(--amber)}
-.explain{
-  margin-top:14px;padding:14px;border-radius:14px;
-  border:1px solid rgba(95,240,182,.32);background:rgba(95,240,182,.07);
-  animation:viewIn .3s both;
-}
-.explain.bad{border-color:rgba(255,125,125,.35);background:rgba(255,125,125,.07)}
-.explain h5{font-size:.78rem;letter-spacing:.12em;text-transform:uppercase;color:var(--mint);margin-bottom:5px}
-.explain.bad h5{color:var(--coral)}
-.explain p{font-size:.9rem;color:var(--ink-dim)}
-
-/* result */
-.result{text-align:center;padding:8px 4px 4px}
-.result .medal{width:120px;height:120px;margin:0 auto 14px}
-.result h3{font-size:clamp(1.3rem,4vw,1.8rem);letter-spacing:-.02em;font-weight:800}
-.result p{color:var(--ink-dim);margin-top:8px;font-size:.94rem}
-.result-stats{display:flex;justify-content:center;gap:18px;margin:18px 0 6px;flex-wrap:wrap}
-.result-stat{background:rgba(126,168,255,.07);border:1px solid var(--line);border-radius:14px;padding:10px 16px;min-width:96px}
-.result-stat b{display:block;font-size:1.25rem;color:var(--amber);font-weight:800}
-.result-stat span{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
-
-/* ---------- planet sheet ---------- */
-.planet-hero{display:grid;grid-template-columns:1fr;gap:16px;align-items:center}
-.planet-big{display:grid;place-items:center;padding:8px}
-.planet-big .pv{width:min(180px,44vw);height:min(180px,44vw);animation:floaty 7s ease-in-out infinite}
-/* planet sheet: keep the stat grid clear of the footer on short screens */
-@keyframes floaty{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}
-.planet-name{font-size:clamp(1.6rem,5vw,2.2rem);font-weight:800;letter-spacing:-.03em}
-.planet-type{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);margin-bottom:6px}
-.planet-blurb{color:var(--ink-dim);font-size:.95rem;margin-top:10px}
-.stat-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;margin-top:18px}
-.stat-cell{background:rgba(126,168,255,.06);border:1px solid var(--line);border-radius:12px;padding:10px 12px}
-.stat-cell span{display:block;font-size:.62rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:3px}
-.stat-cell b{font-size:.88rem;font-weight:800;letter-spacing:-.01em}
-.fact-list{display:grid;gap:9px;margin-top:14px}
-.fact{display:flex;gap:11px;background:rgba(255,200,87,.06);border:1px solid rgba(255,200,87,.22);border-radius:13px;padding:12px 14px;font-size:.88rem;color:#ffe9bd}
-.fact b{color:var(--amber);flex:none;font-size:1rem}
-
-/* ---------- character ---------- */
-.cadet-layout{display:grid;grid-template-columns:1fr;gap:16px}
-.cadet-stage{
-  position:relative;border-radius:var(--r-lg);border:1px solid var(--line-strong);
-  background:
-    radial-gradient(340px 260px at 50% 12%,rgba(79,227,255,.16),transparent 68%),
-    linear-gradient(170deg,#13204a,#0a1024);
-  padding:22px;display:flex;flex-direction:column;align-items:center;gap:12px;overflow:hidden;
-}
-.cadet-stage::before{
-  content:"";position:absolute;width:320px;height:320px;border-radius:50%;
-  border:1px dashed rgba(126,168,255,.16);top:50%;left:50%;transform:translate(-50%,-50%);
-  box-shadow:0 0 0 54px rgba(126,168,255,.03),0 0 0 108px rgba(126,168,255,.018);
-  pointer-events:none;
-}
-.cadet-avatar{width:min(250px,68vw);position:relative;z-index:1;animation:floaty 6s ease-in-out infinite}
-.cadet-name{font-size:1.25rem;font-weight:800;letter-spacing:-.02em;z-index:1}
-.cadet-title{font-size:.7rem;letter-spacing:.16em;text-transform:uppercase;color:var(--cyan);z-index:1}
-.cadet-stage .btn{z-index:1}
-
-.shop-tabs{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
-.shop-tab{
-  padding:8px 14px;border-radius:999px;border:1px solid var(--line);cursor:pointer;
-  background:rgba(126,168,255,.06);color:var(--ink-dim);font-size:.8rem;font-weight:800;
-}
-.shop-tab.is-active{background:rgba(79,227,255,.16);border-color:var(--cyan);color:var(--ink)}
-.shop-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.shop-item{
-  display:flex;align-items:center;gap:12px;border-radius:16px;padding:12px;
-  border:1px solid var(--line);background:rgba(15,23,48,.72);
-  transition:border-color .2s,background .2s;
-}
-.shop-item:hover{border-color:var(--line-strong);background:rgba(23,36,74,.8)}
-.shop-item.is-equipped{border-color:rgba(95,240,182,.45);background:rgba(95,240,182,.07)}
-.shop-thumb{
-  width:56px;height:56px;flex:none;border-radius:14px;display:grid;place-items:center;
-  background:radial-gradient(circle at 40% 30%,rgba(79,227,255,.18),rgba(10,16,36,.9));
-  border:1px solid var(--line);overflow:hidden;
-}
-.shop-thumb svg{width:46px;height:46px}
-.shop-info{flex:1;min-width:0}
-.shop-info h5{font-size:.9rem;font-weight:800}
-.shop-info p{font-size:.72rem;color:var(--ink-faint);margin-top:2px}
-.shop-price{font-size:.78rem;font-weight:800;color:var(--amber);margin-top:4px;display:flex;align-items:center;gap:4px}
-.shop-act{display:flex;flex-direction:column;gap:6px;flex:none}
-.starter-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
-.swatch{width:38px;height:38px;border-radius:50%;border:2px solid rgba(255,255,255,.18);cursor:pointer;transition:transform .16s}
-.swatch:hover{transform:scale(1.08)}
-.swatch.is-active{border-color:#fff;box-shadow:0 0 0 3px rgba(79,227,255,.35)}
-
-/* ---------- trophies ---------- */
-.trophy-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.trophy{
-  display:flex;align-items:center;gap:13px;border-radius:16px;padding:13px 15px;
-  border:1px solid var(--line);background:rgba(15,23,48,.65);
-}
-.trophy .medal-sm{width:44px;height:44px;flex:none;border-radius:50%;display:grid;place-items:center;font-size:1.15rem;background:rgba(126,168,255,.09);border:1px solid var(--line);filter:grayscale(1);opacity:.6}
-.trophy.done{border-color:rgba(255,200,87,.4);background:rgba(255,200,87,.07)}
-.trophy.done .medal-sm{filter:none;opacity:1;background:radial-gradient(circle at 35% 30%,#ffe6a8,#ffb027);border-color:#ffe7b8}
-.trophy h5{font-size:.92rem;font-weight:800}
-.trophy p{font-size:.74rem;color:var(--ink-faint);margin-top:1px}
-.trophy .state{margin-left:auto;font-size:.62rem;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);white-space:nowrap}
-.trophy.done .state{color:var(--amber)}
-
-/* ---------- pip ---------- */
-.pip-dock{position:fixed;right:16px;bottom:16px;z-index:80;display:flex;flex-direction:column;align-items:flex-end;gap:10px}
-.pip-launcher{
-  width:60px;height:60px;border-radius:50%;border:2px solid rgba(79,227,255,.5);
-  background:radial-gradient(circle at 36% 30%,#2a4a7a,#0d1730);
-  color:#fff;cursor:pointer;display:grid;place-items:center;position:relative;
-  box-shadow:0 16px 34px -16px rgba(79,227,255,.85);
-  transition:transform .2s;
-}
-.pip-launcher:hover{transform:translateY(-3px) scale(1.03)}
-.pip-launcher svg{width:38px;height:38px}
-#pipLauncherAvatar{display:block;width:34px;height:34px;overflow:hidden}
-#pipHeadAvatar svg,.cadet-avatar svg,.planet-big svg{height:auto}
-.pip-launcher .dot{position:absolute;top:-2px;right:-2px;width:14px;height:14px;border-radius:50%;background:var(--amber);border:2px solid var(--bg);animation:pulseDot 2.4s infinite}
-@keyframes pulseDot{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.25);opacity:.7}}
-.pip-panel[hidden]{display:none}
-.pip-panel{
-  width:min(380px,calc(100vw - 32px));height:min(560px,calc(100vh - 130px));
-  border-radius:22px;border:1px solid rgba(79,227,255,.32);
-  background:rgba(9,15,33,.97);backdrop-filter:blur(20px);
-  box-shadow:0 30px 70px -30px rgba(0,0,0,.95);
-  display:flex;flex-direction:column;overflow:hidden;
-  animation:sheetIn .26s cubic-bezier(.2,.8,.3,1) both;
-}
-.pip-head{display:flex;align-items:center;gap:10px;padding:12px 14px;border-bottom:1px solid var(--line);background:rgba(79,227,255,.05)}
-.pip-head .who{display:flex;flex-direction:column;line-height:1.15}
-.pip-head b{font-size:.92rem}
-.pip-head small{font-size:.66rem;letter-spacing:.1em;text-transform:uppercase;color:var(--mint)}
-.pip-log{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:10px}
-.msg{max-width:88%;padding:10px 13px;border-radius:16px;font-size:.87rem;line-height:1.5;animation:viewIn .22s both}
-.msg.pip{align-self:flex-start;background:rgba(79,227,255,.1);border:1px solid rgba(79,227,255,.24);border-bottom-left-radius:5px;color:#e2f8ff}
-.msg.me{align-self:flex-end;background:rgba(255,200,87,.13);border:1px solid rgba(255,200,87,.3);border-bottom-right-radius:5px;color:#ffeec6}
-.msg.typing{display:flex;gap:4px;align-items:center}
-.msg.typing i{width:6px;height:6px;border-radius:50%;background:var(--cyan);animation:blink 1s infinite}
-.msg.typing i:nth-child(2){animation-delay:.15s}
-.msg.typing i:nth-child(3){animation-delay:.3s}
-@keyframes blink{0%,100%{opacity:.25;transform:translateY(0)}50%{opacity:1;transform:translateY(-3px)}}
-.pip-chips{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 10px}
-.chip{
-  border:1px solid rgba(79,227,255,.28);background:rgba(79,227,255,.07);color:#cdf4ff;
-  border-radius:999px;padding:6px 11px;font-size:.72rem;font-weight:700;cursor:pointer;
-}
-.chip:hover{background:rgba(79,227,255,.16)}
-.pip-form{display:flex;gap:8px;padding:10px 12px;border-top:1px solid var(--line);background:rgba(6,10,24,.9)}
-.pip-form input{
-  flex:1;min-width:0;background:rgba(126,168,255,.08);border:1px solid var(--line);
-  border-radius:999px;padding:11px 15px;color:var(--ink);font:inherit;font-size:.86rem;
-}
-.pip-form input::placeholder{color:var(--ink-faint)}
-.pip-send{width:42px;height:42px;border-radius:50%;border:0;background:var(--cyan);color:#04121a;font-size:1rem;cursor:pointer;flex:none;display:grid;place-items:center}
-
-/* ---------- toast ---------- */
-.toast-wrap{position:fixed;left:50%;bottom:22px;transform:translateX(-50%);z-index:95;display:flex;flex-direction:column;gap:8px;align-items:center;pointer-events:none;width:calc(100% - 32px);max-width:420px}
-.toast{
-  display:flex;align-items:center;gap:9px;background:rgba(10,18,38,.97);
-  border:1px solid rgba(255,200,87,.45);color:#ffecc4;
-  padding:10px 16px;border-radius:999px;font-size:.84rem;font-weight:700;
-  box-shadow:0 18px 40px -22px #000;animation:toastIn .3s cubic-bezier(.2,.8,.3,1) both;
-  max-width:100%;
-}
-.toast.mint{border-color:rgba(95,240,182,.45);color:#d6fff0}
-.toast.coral{border-color:rgba(255,125,125,.45);color:#ffdede}
-.toast.out{animation:toastOut .3s ease forwards}
-@keyframes toastIn{from{opacity:0;transform:translateY(14px) scale(.96)}to{opacity:1;transform:none}}
-@keyframes toastOut{to{opacity:0;transform:translateY(10px)}}
-
-#confetti{position:fixed;inset:0;z-index:90;pointer-events:none}
-
-  /* Sheet must stay readable: on desktop the Pip panel is docked in its own
-     column, but if it is open the sheet gets a right margin so nothing hides. */
-  .overlay.is-open{padding:16px}
-  @media (min-width:900px){
-    body.pip-open .sheet{max-width:min(960px, calc(100vw - 430px))}
-    body.pip-open .overlay{justify-items:start}
-  }
-
-  /* ---------- forms ---------- */
-.field{display:grid;gap:6px;margin-bottom:14px}
-.field label{font-size:.72rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint);font-weight:700}
-.field input{
-  background:rgba(126,168,255,.07);border:1px solid var(--line-strong);border-radius:12px;
-  padding:12px 14px;color:var(--ink);font:inherit;font-size:.95rem;width:100%;
-}
-.field input:focus{border-color:var(--cyan);background:rgba(79,227,255,.08);outline:none}
-.switchline{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:rgba(15,23,48,.6);margin-bottom:9px}
-.switchline span{font-size:.88rem;font-weight:700}
-.switchline small{display:block;font-size:.7rem;color:var(--ink-faint);font-weight:500;margin-top:2px}
-.toggle{width:50px;height:28px;border-radius:99px;border:1px solid var(--line-strong);background:rgba(126,168,255,.16);position:relative;cursor:pointer;flex:none;padding:0}
-.toggle::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#c9d6f5;transition:transform .2s,background .2s}
-.toggle.on{background:rgba(95,240,182,.35);border-color:var(--mint)}
-.toggle.on::after{transform:translateX(21px);background:var(--mint)}
-
-/* ---------- responsive ---------- */
-@media (min-width:640px){
-  main{padding:26px 24px 130px}
-  .topbar-inner{padding:12px 24px}
-  .tabs{padding:0 24px 10px}
-  .strip{grid-template-columns:repeat(4,1fr)}
-  .mission-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}
-  .planet-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .trophy-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .switch-row{grid-template-columns:repeat(3,1fr)}
-  .sheet-body{padding:22px}
-  .lesson-wrap{grid-template-columns:.85fr 1fr;align-items:center}
-  .planet-hero{grid-template-columns:.8fr 1fr}
-}
-@media (min-width:900px){
-  .hud-rank{display:flex}
-  .hero{grid-template-columns:1.35fr .8fr;padding:34px;align-items:center}
-  .hero-visual{min-height:250px}
-  .mission-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .planet-grid{grid-template-columns:repeat(4,minmax(0,1fr))}
-  .cadet-layout{grid-template-columns:360px 1fr;align-items:start}
-  .cadet-stage{position:sticky;top:150px}
-  .stat-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-  .shop-grid{grid-template-columns:repeat(2,minmax(0,1fr))}
-  .trophy-grid{grid-template-columns:repeat(3,minmax(0,1fr))}
-}
-@media (max-width:719px){
-  .pip-dock{right:12px;bottom:74px}
-  .pip-panel{position:fixed;left:8px;right:8px;bottom:8px;width:auto;height:min(70vh,520px);border-radius:20px}
-  main{padding-bottom:110px}
-  .brand-sub{display:none}
-}
-/* On wide screens keep the open Pip panel clear of the sheet content:
-   it shrinks the app column instead of covering it. */
-@media (min-width:900px){
-  body.pip-open main{max-width:calc(1180px - 400px);margin-left:max(18px,calc((100vw - 1180px)/2));margin-right:auto;transition:max-width .28s ease}
-  body.pip-open .pip-dock{right:20px}
-}
-@media (min-width:900px) and (max-width:1180px){
-  body.pip-open main{margin-left:18px}
-}
-@media (prefers-reduced-motion:reduce){
-  *,*::before,*::after{animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important}
-}
-body.calm *,body.calm *::before,body.calm *::after{
-  animation-duration:.001ms !important;animation-iteration-count:1 !important;transition-duration:.001ms !important;
-}
-/* ---------- voice / read-aloud ---------- */
-.lesson-topline{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
-.speak-btn{
-  margin-left:auto;display:inline-flex;align-items:center;gap:7px;
-  min-height:38px;padding:7px 14px;border-radius:999px;cursor:pointer;
-  border:1px solid rgba(79,227,255,.35);background:rgba(79,227,255,.09);
-  color:#cdf4ff;font-size:.78rem;font-weight:800;font-family:inherit;
-  transition:all .18s;
-}
-.speak-btn:hover{background:rgba(79,227,255,.2);transform:translateY(-1px)}
-.speak-btn.is-on{border-color:rgba(95,240,182,.5);background:rgba(95,240,182,.12);color:#d3fff0}
-.speak-btn .spk-ico{font-size:.95rem}
-.voice-line{
-  margin-top:14px;display:flex;gap:10px;align-items:flex-start;
-  border-radius:14px;padding:11px 14px;font-size:.86rem;line-height:1.5;
-  background:rgba(79,227,255,.07);border:1px solid rgba(79,227,255,.24);color:#dff6ff;
-}
-.voice-line .vl-ico{flex:none;font-size:1.05rem}
-.voice-line b{color:var(--cyan)}
-.icon-btn.is-on{border-color:rgba(95,240,182,.5);background:rgba(95,240,182,.14);color:#d3fff0}
-
-/* ---------- rarity ---------- */
-.rarity{
-  display:inline-flex;align-items:center;gap:5px;
-  font-size:.6rem;font-weight:800;letter-spacing:.12em;text-transform:uppercase;
-  padding:3px 8px;border-radius:999px;border:1px solid currentColor;
-}
-.rarity.common{color:#9fb0d4}
-.rarity.rare{color:#4fe3ff}
-.rarity.epic{color:#a99bff}
-.rarity.legendary{color:#ffc857}
-.shop-item.r-rare{border-color:rgba(79,227,255,.3)}
-.shop-item.r-epic{border-color:rgba(169,155,255,.35);background:rgba(169,155,255,.05)}
-.shop-item.r-legendary{
-  border-color:rgba(255,200,87,.5);
-  background:linear-gradient(150deg,rgba(255,200,87,.1),rgba(15,23,48,.75));
-  box-shadow:0 0 0 1px rgba(255,200,87,.12) inset;
-}
-.shop-item.r-legendary .shop-thumb{border-color:rgba(255,200,87,.45)}
-.shop-tabs{display:flex;gap:7px;margin-bottom:12px;flex-wrap:wrap}
-.shop-tab .cnt{opacity:.6;font-size:.68rem;margin-left:4px}
-.shop-meta{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:5px}
-.shop-price{font-size:.78rem;font-weight:800;color:var(--amber);display:inline-flex;align-items:center;gap:4px}
-.shop-price.locked{color:var(--ink-faint)}
-.wallet-bar{
-  display:flex;align-items:center;gap:10px;flex-wrap:wrap;
-  border-radius:14px;border:1px solid var(--line);background:rgba(15,23,48,.7);
-  padding:11px 14px;margin-bottom:12px;font-size:.82rem;
-}
-.wallet-bar b{color:var(--amber);font-size:1rem}
-.wallet-bar .bar{flex:1;min-width:120px;height:7px;border-radius:99px;background:rgba(126,168,255,.14);overflow:hidden}
-.wallet-bar .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--mint));border-radius:99px;transition:width .5s}
-
-/* ---------- new activity types ---------- */
-.shield-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.shield-card{
-  display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;
-  border-radius:14px;border:1px solid rgba(255,125,125,.4);background:rgba(255,125,125,.06);
-  padding:13px 15px;color:#ffc9c9;font-weight:800;font-size:.88rem;font-family:inherit;
-  transition:all .2s;
-}
-.shield-card small{display:block;font-weight:600;font-size:.7rem;color:rgba(255,201,201,.65);margin-top:2px}
-.shield-card .ico{font-size:1.3rem;flex:none}
-.shield-card.on{border-color:rgba(95,240,182,.5);background:rgba(95,240,182,.1);color:#c9ffee}
-.shield-card.on small{color:rgba(201,255,238,.7)}
-.storm-timer{height:8px;border-radius:99px;background:rgba(126,168,255,.14);overflow:hidden;margin-bottom:14px}
-.storm-timer i{display:block;height:100%;background:linear-gradient(90deg,var(--coral),var(--amber));transition:width .3s linear}
-.order-list{display:grid;gap:9px}
-.order-item{
-  display:flex;align-items:center;gap:11px;text-align:left;cursor:pointer;
-  border-radius:13px;border:1px solid var(--line);background:rgba(18,29,60,.7);
-  padding:12px 14px;color:var(--ink);font-weight:700;font-size:.87rem;font-family:inherit;
-  transition:all .18s;
-}
-.order-item:hover{border-color:var(--line-strong);background:rgba(23,36,74,.9)}
-.order-item .num{width:26px;height:26px;border-radius:50%;display:grid;place-items:center;flex:none;background:rgba(126,168,255,.14);font-size:.74rem;color:var(--ink-dim)}
-.order-item.done{border-color:rgba(95,240,182,.45);background:rgba(95,240,182,.1);color:#d3fff0}
-.order-item.done .num{background:var(--mint);color:#03231a}
-.order-item.bad{animation:shake .35s;border-color:rgba(255,125,125,.6)}
-.pick-grid{display:grid;grid-template-columns:1fr;gap:10px}
-.pick-card{
-  display:flex;align-items:center;gap:12px;text-align:left;cursor:pointer;
-  border-radius:14px;border:1px solid var(--line);background:rgba(18,29,60,.7);
-  padding:13px 15px;color:var(--ink);font-weight:700;font-size:.88rem;font-family:inherit;
-  transition:all .18s;
-}
-.pick-card:hover{border-color:var(--line-strong);background:rgba(23,36,74,.9)}
-.pick-card .ico{font-size:1.35rem;flex:none}
-.pick-card small{display:block;font-weight:500;font-size:.72rem;color:var(--ink-faint);margin-top:2px}
-.pick-card.on{border-color:rgba(95,240,182,.5);background:rgba(95,240,182,.1);color:#d3fff0}
-.pick-card.bad{animation:shake .35s;border-color:rgba(255,125,125,.6)}
-.focus-stage{
-  position:relative;height:250px;border-radius:14px;overflow:hidden;
-  background:radial-gradient(80% 80% at 50% 45%,#0b1530,#04070f);
-  border:1px solid rgba(126,168,255,.14);display:grid;place-items:center;
-}
-.focus-target{width:150px;height:150px;transition:filter .12s linear,transform .12s linear}
-.focus-read{position:absolute;bottom:10px;left:12px;right:12px;display:flex;justify-content:space-between;font-size:.75rem;color:var(--ink-faint)}
-
-/* ---------- avatar stage extras ---------- */
-.cadet-avatar{position:relative}
-.cadet-avatar .pet-float{
-  position:absolute;right:-6px;bottom:14%;width:64px;height:64px;
-  animation:floaty 4.5s ease-in-out infinite;
-}
-.cadet-avatar .trail-float{
-  position:absolute;left:-10px;bottom:6%;width:52px;height:52px;opacity:.85;
-  animation:floaty 5.5s ease-in-out infinite reverse;
-}
-.look-chips{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;z-index:1;max-width:100%;padding:0 6px}
-.look-chip{
-  font-size:.62rem;font-weight:800;letter-spacing:.06em;text-transform:uppercase;
-  padding:4px 9px;border-radius:999px;border:1px solid var(--line);
-  background:rgba(126,168,255,.08);color:var(--ink-dim);
-}
-/*@@CSS_MORE@@*/
-</style>
-<style>
-/* ============================================================
-   AUTH — sign in / create account screen
-   ============================================================ */
-.auth{position:fixed;inset:0;z-index:120;display:none;overflow-y:auto;background:var(--bg);
-  padding:max(16px,env(safe-area-inset-top,0px)) 16px max(16px,env(safe-area-inset-bottom,0px))}
-.auth.is-open{display:grid;place-items:center;animation:fadeIn .3s ease both}
-.auth [hidden]{display:none!important}
-#authStars{position:fixed;inset:0;width:100%;height:100%;pointer-events:none}
-.auth-glow{position:fixed;inset:0;pointer-events:none;
-  background:
-    radial-gradient(800px 560px at 14% -8%, rgba(79,227,255,.16), transparent 62%),
-    radial-gradient(720px 500px at 92% 6%, rgba(255,200,87,.11), transparent 60%),
-    radial-gradient(820px 640px at 60% 108%, rgba(169,155,255,.12), transparent 62%)}
-.auth-card{position:relative;width:100%;max-width:430px;margin:auto;padding:30px 26px 24px;
-  border:1px solid var(--line-strong);border-radius:var(--r-lg);
-  background:linear-gradient(165deg,rgba(23,36,74,.92),rgba(12,19,42,.94));
-  box-shadow:var(--shadow),0 0 0 1px rgba(79,227,255,.06) inset;backdrop-filter:blur(10px)}
-.auth-logo{width:78px;height:78px;margin:-62px auto 12px;border-radius:24px;display:grid;place-items:center;
-  background:linear-gradient(150deg,#1d305f,#0c1730);border:1px solid rgba(79,227,255,.5);
-  box-shadow:0 0 0 1px rgba(79,227,255,.14) inset,0 18px 36px -14px rgba(79,227,255,.85);animation:floaty 5s ease-in-out infinite}
-.auth-logo svg{width:46px;height:46px}
-.auth-brand{text-align:center;font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1.1;
-  background:linear-gradient(92deg,#8df3ff,#e9f4ff 55%,#ffd98a);-webkit-background-clip:text;background-clip:text;color:transparent}
-.auth-kicker{text-align:center;font-size:.68rem;letter-spacing:.2em;text-transform:uppercase;color:var(--ink-faint);margin:4px 0 18px}
-.auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:4px;padding:4px;border-radius:14px;background:rgba(126,168,255,.08);border:1px solid var(--line);margin-bottom:18px}
-.auth-tab{border:0;border-radius:11px;padding:10px 8px;background:transparent;color:var(--ink-dim);font-weight:800;font-size:.88rem;cursor:pointer;transition:background .2s,color .2s}
-.auth-tab[aria-selected="true"]{background:var(--cyan);color:#04121a;box-shadow:0 10px 22px -14px rgba(79,227,255,.95)}
-.auth-tab:not([aria-selected="true"]):hover{color:var(--ink)}
-.auth-title{font-size:1.12rem;font-weight:800;letter-spacing:-.01em}
-.auth-lead{font-size:.86rem;color:var(--ink-dim);margin:2px 0 16px}
-.auth-pw{position:relative}
-.auth-pw input{padding-right:48px}
-.auth-eye{position:absolute;right:5px;top:50%;transform:translateY(-50%);width:38px;height:38px;border:0;border-radius:10px;background:transparent;color:var(--ink-dim);font-size:1.05rem;cursor:pointer}
-.auth-eye:hover{background:rgba(126,168,255,.14);color:var(--ink)}
-.auth-meter{display:grid;grid-template-columns:repeat(4,1fr) auto;gap:5px;align-items:center;margin:-6px 0 14px}
-.auth-meter i{height:5px;border-radius:9px;background:rgba(126,168,255,.18);transition:background .2s}
-.auth-meter[data-s="1"] i:nth-child(-n+1){background:var(--coral)}
-.auth-meter[data-s="2"] i:nth-child(-n+2){background:var(--amber)}
-.auth-meter[data-s="3"] i:nth-child(-n+3){background:var(--cyan)}
-.auth-meter[data-s="4"] i:nth-child(-n+4){background:var(--mint)}
-.auth-meter span{font-size:.72rem;color:var(--ink-faint);margin-left:6px;min-width:64px}
-.auth-check{display:flex;align-items:center;gap:10px;font-size:.84rem;color:var(--ink-dim);margin-bottom:12px;cursor:pointer}
-.auth-check input{width:18px;height:18px;accent-color:var(--cyan);flex:none}
-.auth-error{min-height:1.3em;margin:0 0 10px;font-size:.84rem;font-weight:700;color:var(--coral)}
-.auth-or{display:flex;align-items:center;gap:12px;margin:16px 0 12px;color:var(--ink-faint);font-size:.72rem;letter-spacing:.14em;text-transform:uppercase}
-.auth-or::before,.auth-or::after{content:"";flex:1;height:1px;background:var(--line)}
-.auth-note{margin-top:14px;text-align:center;font-size:.74rem;color:var(--ink-faint);line-height:1.5}
-.auth-card.shake{animation:authShake .38s ease}
-@keyframes authShake{20%{transform:translateX(-8px)}40%{transform:translateX(7px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
-@media (max-width:420px){.auth-card{padding:28px 18px 20px}}
-@media (prefers-reduced-motion:reduce){.auth-logo,.auth-card.shake{animation:none}}
-/* ---- leaderboard + admin ---- */
-.lb-tools{display:flex;flex-wrap:wrap;gap:8px;margin-top:14px}
-.lb-tools .extra-btn[aria-pressed="true"]{background:var(--cyan);color:#04121a;border-color:var(--cyan)}
-.lb-me{margin:0 0 14px;padding:12px 16px;border-radius:14px;border:1px solid rgba(79,227,255,.4);background:rgba(79,227,255,.08);font-weight:700}
-.lb-podium{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;align-items:end;margin:6px 0 16px}
-.lb-pod{text-align:center;padding:16px 8px;border-radius:18px;border:1px solid var(--line-strong);background:rgba(15,23,48,.85);min-width:0}
-.lb-pod.p1{order:2;padding-top:28px;border-color:rgba(255,200,87,.6);box-shadow:0 0 34px -14px rgba(255,200,87,.8)}
-.lb-pod.p2{order:1}.lb-pod.p3{order:3}
-.lb-medal{font-size:2rem;line-height:1.2}
-.lb-name{font-weight:800;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.lb-score{color:var(--amber);font-weight:800;margin-top:2px}
-.lb-sub{font-size:.74rem;color:var(--ink-faint)}
-.lb-list{display:grid;gap:8px}
-.lb-row{display:grid;grid-template-columns:44px minmax(0,1fr) auto;gap:10px;align-items:center;padding:12px 14px;border-radius:14px;border:1px solid var(--line);background:rgba(15,23,48,.8)}
-.lb-row .lb-rank{font-weight:800;color:var(--ink-faint);text-align:center}
-.lb-row.me,.lb-pod.me{border-color:var(--cyan);background:rgba(79,227,255,.1)}
-.lb-empty{padding:26px;text-align:center;color:var(--ink-dim);border:1px dashed var(--line-strong);border-radius:16px}
-.adm-wrap{overflow-x:auto}
-.adm-table{width:100%;border-collapse:collapse;font-size:.84rem;min-width:680px}
-.adm-table th,.adm-table td{padding:10px 8px;border-bottom:1px solid var(--line);text-align:left;vertical-align:middle}
-.adm-table th{font-size:.68rem;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-faint)}
-.adm-actions{display:flex;flex-wrap:wrap;gap:6px}
-.adm-actions button{padding:6px 10px;font-size:.74rem}
-.adm-danger{border-color:rgba(255,125,125,.5)!important;color:#ffc9c9!important}
-.adm-badge{display:inline-block;padding:2px 8px;border-radius:99px;font-size:.68rem;font-weight:800;background:rgba(255,200,87,.18);color:var(--amber);margin-left:6px}
-</style>
-</head>
-<body>
-<canvas id="starfield" aria-hidden="true"></canvas>
-<div class="nebula" aria-hidden="true"></div>
-
-<header class="topbar">
-  <div class="topbar-inner">
-    <button class="brand" type="button" onclick="app.go('missions')" aria-label="Astronaut Jr home">
-      <span class="logo" aria-hidden="true">
-        <svg viewBox="0 0 48 48" fill="none">
-          <path d="M24 5c6 4 9 11 9 19 0 5-1 9-3 13H18c-2-4-3-8-3-13 0-8 3-15 9-19Z" fill="#eaf6ff"/>
-          <path d="M24 5c6 4 9 11 9 19 0 5-1 9-3 13h-6V5Z" fill="#b8dcef"/>
-          <circle cx="24" cy="19" r="4.4" fill="#0b1730"/>
-          <circle cx="24" cy="19" r="2.4" fill="#4fe3ff"/>
-          <path d="M15 30l-6 6 8-1M33 30l6 6-8-1" fill="#ffc857"/>
-          <path d="M21 38l3 7 3-7" fill="#ff9d3d"/>
-        </svg>
-      </span>
-      <span class="brand-text">
-        <span class="brand-name">Astronaut Jr</span>
-        <span class="brand-sub">Space Academy</span>
-      </span>
-    </button>
-    <div class="hud">
-      <div class="hud-stat" title="Stars you have earned">
-        <span class="hud-ico" aria-hidden="true">★</span>
-        <span><b id="hudStars">0</b><small>stars</small></span>
-      </div>
-      <div class="hud-rank">
-        <span id="hudRank">Space Trainee</span>
-        <span class="rankbar"><i id="rankFill"></i></span>
-      </div>
-      <button class="icon-btn" id="btnVoice" title="Pip reads aloud" aria-label="Toggle Pip voice" aria-pressed="false">🔈</button>
-      <button class="icon-btn" id="btnSound" title="Sound effects" aria-label="Toggle sound effects" aria-pressed="true">🔊</button>
-      <button class="icon-btn" id="btnSettings" title="Settings" aria-label="Open settings">⚙️</button>
-    </div>
-  </div>
-  <nav class="tabs" aria-label="Sections">
-    <button class="tab is-active" data-view="missions">🚀 Missions</button>
-    <button class="tab" data-view="planets">🪐 Planets</button>
-    <button class="tab" data-view="cadet">🧑‍🚀 My Cadet</button>
-    <button class="tab" data-view="trophies">🏆 Trophies</button>
-  </nav>
-</header>
-
-<main id="app">
-  <section class="view is-active" id="view-missions" aria-label="Training missions"></section>
-  <section class="view" id="view-planets" aria-label="Planet explorer"></section>
-  <section class="view" id="view-cadet" aria-label="My cadet and outfit shop"></section>
-  <section class="view" id="view-trophies" aria-label="Trophies"></section>
-</main>
-
-<!-- ================= MISSION OVERLAY ================= -->
-<div class="overlay" id="missionOverlay" role="dialog" aria-modal="true" aria-labelledby="missionTitle">
-  <div class="sheet">
-    <div class="sheet-head">
-      <div>
-        <small id="missionKicker">Mission 01</small>
-        <h3 id="missionTitle">Mission title</h3>
-      </div>
-      <div class="lesson-dots" id="lessonDots" aria-hidden="true"></div>
-      <button class="close-x spacer" onclick="app.closeMission()" aria-label="Close mission">✕</button>
-    </div>
-    <div class="sheet-body" id="missionBody"></div>
-    <div class="sheet-foot" id="missionFoot"></div>
-  </div>
-</div>
-
-<!-- ================= PLANET SHEET ================= -->
-<div class="overlay" id="planetSheet" role="dialog" aria-modal="true" aria-label="Planet file">
-  <div class="sheet">
-    <div class="sheet-head">
-      <div>
-        <small>Planet file</small>
-        <h3>Explorer notes</h3>
-      </div>
-      <button class="close-x spacer" onclick="app.closePlanet()" aria-label="Close planet">✕</button>
-    </div>
-    <div class="sheet-body" id="planetBody"></div>
-    <div class="sheet-foot">
-      <button class="btn btn-ghost btn-sm" id="planetPrev">← Previous</button>
-      <button class="btn btn-primary btn-sm" id="planetRead">🔊 Read to me</button>
-      <button class="btn btn-ghost btn-sm" id="planetNext">Next →</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SETUP ================= -->
-<div class="overlay" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
-  <div class="sheet narrow">
-    <div class="sheet-head">
-      <div>
-        <small>Cadet registration</small>
-        <h3 id="setupTitle">Welcome to the Academy</h3>
-      </div>
-    </div>
-    <div class="sheet-body">
-      <div style="text-align:center;margin-bottom:14px">
-        <div class="cadet-avatar" id="setupAvatar" style="width:150px;margin:0 auto"></div>
-      </div>
-      <div class="field">
-        <label for="cadetName">Your cadet name</label>
-        <input id="cadetName" type="text" maxlength="18" placeholder="e.g. Nova" autocomplete="off" />
-      </div>
-      <div class="field">
-        <label>Pick your first suit colour</label>
-        <div class="starter-row" id="starterColors"></div>
-      </div>
-      <p style="font-size:.82rem;color:var(--ink-faint);margin-bottom:14px">Everything you earn — stars, missions, outfits — is saved on this device.</p>
-      <button class="btn btn-primary btn-block" id="btnStart">Start training 🚀</button>
-    </div>
-  </div>
-</div>
-
-<!-- ================= SETTINGS ================= -->
-<div class="overlay" id="settingsModal" role="dialog" aria-modal="true" aria-labelledby="settingsTitle">
-  <div class="sheet narrow">
-    <div class="sheet-head">
-      <div>
-        <small>Cadet console</small>
-        <h3 id="settingsTitle">Settings</h3>
-      </div>
-      <button class="close-x spacer" onclick="app.closeSettings()" aria-label="Close settings">✕</button>
-    </div>
-    <div class="sheet-body">
-      <div class="switchline">
-        <span>Sound effects<small>Little beeps and rewards</small></span>
-        <button class="toggle on" id="tgSound" aria-label="Toggle sound effects"></button>
-      </div>
-      <div class="switchline">
-        <span>Pip-0 reads aloud<small>Speaks every lesson card and his messages</small></span>
-        <button class="toggle" id="tgVoice" aria-label="Toggle Pip voice"></button>
-      </div>
-      <div class="switchline">
-        <span>Calm mode<small>Stops floating and zoom animations</small></span>
-        <button class="toggle" id="tgCalm" aria-label="Toggle calm mode"></button>
-      </div>
-      <div class="field" style="margin-top:16px">
-        <label for="renameInput">Cadet name</label>
-        <input id="renameInput" type="text" maxlength="18" />
-      </div>
-      <button class="btn btn-ghost btn-block" id="btnRename" style="margin-bottom:8px">Save name</button>
-      <div class="switchline" style="margin-top:6px">
-        <span>Signed in as<small id="authWho">Guest</small></span>
-        <button class="btn btn-ghost btn-sm" id="btnSignOut" type="button">Sign out</button>
-      </div>
-      <button class="btn btn-ghost btn-block" id="btnReset" style="color:#ffc9c9;border-color:rgba(255,125,125,.35)">Reset all progress</button>
-      <p style="font-size:.72rem;color:var(--ink-faint);margin-top:12px;text-align:center">Astronaut Jr v3 · 15 missions · saved in this browser</p>
-    </div>
-  </div>
-</div>
-
-<!-- ================= PIP ================= -->
-<div class="pip-dock">
-  <div class="pip-panel" id="pipPanel" hidden>
-    <div class="pip-head">
-      <div style="width:36px;height:36px;flex:none" id="pipHeadAvatar"></div>
-      <div class="who"><b>Pip-0</b><small>Astro-buddy · online</small></div>
-      <button class="close-x" style="margin-left:auto;width:34px;height:34px" onclick="app.togglePip(false)" aria-label="Close Pip">✕</button>
-    </div>
-    <div class="pip-log" id="pipLog" aria-live="polite"></div>
-    <div class="pip-chips" id="pipChips"></div>
-    <form class="pip-form" id="pipForm">
-      <input id="pipInput" type="text" maxlength="120" placeholder="Ask Pip anything about space…" autocomplete="off" aria-label="Message Pip-0" />
-      <button class="pip-send" type="submit" aria-label="Send">➤</button>
-    </form>
-  </div>
-  <button class="pip-launcher" id="pipLauncher" aria-label="Talk to Pip-0">
-    <span id="pipLauncherAvatar"></span>
-    <span class="dot"></span>
-  </button>
-</div>
-
-<div class="toast-wrap" id="toastWrap" aria-live="polite"></div>
-<canvas id="confetti" aria-hidden="true"></canvas>
-
-<!-- ================= AUTH (sign in / create account) ================= -->
-<div class="auth" id="authScreen" role="dialog" aria-modal="true" aria-labelledby="authTitle">
-  <canvas id="authStars" aria-hidden="true"></canvas>
-  <div class="auth-glow" aria-hidden="true"></div>
-  <div class="auth-card" id="authCard">
-    <div class="auth-logo" aria-hidden="true">
-      <svg viewBox="0 0 48 48" fill="none">
-        <path d="M24 5c6 4 9 11 9 19 0 5-1 9-3 13H18c-2-4-3-8-3-13 0-8 3-15 9-19Z" fill="#eaf6ff"/>
-        <path d="M24 5c6 4 9 11 9 19 0 5-1 9-3 13h-6V5Z" fill="#b8dcef"/>
-        <circle cx="24" cy="19" r="4.4" fill="#0b1730"/>
-        <circle cx="24" cy="19" r="2.4" fill="#4fe3ff"/>
-        <path d="M15 30l-6 6 8-1M33 30l6 6-8-1" fill="#ffc857"/>
-        <path d="M21 38l3 7 3-7" fill="#ff9d3d"/>
-      </svg>
-    </div>
-    <div class="auth-brand">Astronaut Jr</div>
-    <div class="auth-kicker">Space Academy</div>
-
-    <div class="auth-tabs" role="tablist" aria-label="Account">
-      <button class="auth-tab" role="tab" id="tabSignin" data-mode="signin" aria-selected="true" aria-controls="authForm">Sign in</button>
-      <button class="auth-tab" role="tab" id="tabSignup" data-mode="signup" aria-selected="false" aria-controls="authForm">Create account</button>
-    </div>
-
-    <h2 class="auth-title" id="authTitle">Welcome back, cadet!</h2>
-    <p class="auth-lead" id="authLead">Sign in to pick up your training where you left off.</p>
-
-    <form id="authForm" novalidate>
-      <div class="field">
-        <label for="authUser" id="authUserLabel">Username or email</label>
-        <input id="authUser" type="text" maxlength="64" placeholder="Username or email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
-      </div>
-      <div class="field" id="authEmailWrap" hidden>
-        <label for="authEmail">Email (optional)</label>
-        <input id="authEmail" type="email" maxlength="64" placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck="false" />
-      </div>
-      <div class="field">
-        <label for="authPass">Secret code</label>
-        <div class="auth-pw">
-          <input id="authPass" type="password" placeholder="Your secret code" autocomplete="current-password" />
-          <button type="button" class="auth-eye" id="authEye" aria-label="Show secret code" aria-pressed="false">👁</button>
-        </div>
-      </div>
-      <div class="auth-meter" id="authMeter" data-s="0" hidden><i></i><i></i><i></i><i></i><span id="authMeterText"></span></div>
-      <div class="field" id="authConfirmWrap" hidden>
-        <label for="authPass2">Repeat secret code</label>
-        <input id="authPass2" type="password" placeholder="Type it once more" autocomplete="new-password" />
-      </div>
-      <label class="auth-check"><input type="checkbox" id="authRemember" checked /> Keep me signed in on this device</label>
-      <p class="auth-error" id="authError" role="alert"></p>
-      <button class="btn btn-primary btn-block" id="authSubmit" type="submit">Sign in 🚀</button>
-    </form>
-
-    <div class="auth-or">or</div>
-    <button class="btn btn-ghost btn-block" id="authGuest" type="button">Play as guest 🧑‍🚀</button>
-    <p class="auth-note">Accounts are saved on this device only, so ask a grown-up to help you remember your secret code.</p>
-  </div>
-</div>
-
-<script>
 /* ============================================================
    AUTH — local cadet accounts (saved on this device)
    Each account gets its own save slot, so several cadets can
@@ -1582,8 +396,7 @@ document.addEventListener("DOMContentLoaded",function(){
   if(out)out.addEventListener("click",function(){clearSession();location.reload()});
 });
 })();
-</script>
-<script>
+;
 /* ============================================================
    1. CONTENT DATA
    ============================================================ */
@@ -2610,8 +1423,8 @@ const ACHIEVEMENTS = [
   { id:"legendary",     icon:"👑", name:"Legendary Taste",  desc:"Own any Legendary item.",                  test:s=>s.owned.some(id=>{const f=Shop.find(id);return f&&f.item.rarity==="legendary";}) },
   { id:"rich",          icon:"💰", name:"Star Collector",   desc:"Hold 500 stars at once.",                  test:s=>s.stars>=500 },
   { id:"tycoon",        icon:"🏦", name:"Star Tycoon",      desc:"Earn 2,000 stars all-time.",               test:s=>s.earnedTotal>=2000 },
-  { id:"curious",       icon:"💡", name:"Curious Mind",     desc:"Ask Pip-0 ten questions.",                 test:s=>s.pipAsked>=10 },
-  { id:"listener",      icon:"🔊", name:"Good Listener",    desc:"Turn on Pip's voice.",                     test:s=>!!s.settings.voice }
+  { id:"curious",       icon:"💡", name:"Curious Mind",     desc:"Ask Astro ten questions.",                 test:s=>s.pipAsked>=10 },
+  { id:"listener",      icon:"🔊", name:"Good Listener",    desc:"Turn on Astro's voice.",                     test:s=>!!s.settings.voice }
 ];
 /*@@END_JS_DATA@@*/
 /* ============================================================
@@ -4143,12 +2956,12 @@ const Talk = {
     } catch (e) { return false; }
   },
 
-  /* Read a whole lesson card: heading, body, then Pip's note. */
+  /* Read a whole lesson card: heading, body, then Astro's note. */
   sayCard(stage, lesson) {
     if (!lesson) return false;
     const parts = [lesson.h + "."];
     (lesson.p || []).forEach(p => parts.push(p));
-    if (lesson.note) parts.push("Pip's note. " + lesson.note);
+    if (lesson.note) parts.push("Astro's note. " + lesson.note);
     return this.say(parts.join(" "), { rate: 0.95 });
   },
 
@@ -4513,7 +3326,7 @@ const UI = {
           <h2>Training path</h2>
           <p>${done >= 7 ? "All missions complete — replay any of them to sharpen your skills." : "Finish a mission to unlock the next one. You can replay finished missions any time."}</p>
         </div>
-        <button class="link" onclick="app.togglePip(true)">💬 Ask Pip for a tip</button>
+        <button class="link" onclick="app.togglePip(true)">💬 Ask Astro for a tip</button>
       </div>
 
       <div class="mission-grid">
@@ -4959,10 +3772,10 @@ const Mission = {
           </div>
           <h3 style="margin-top:10px">${esc(l.h)}</h3>
           ${l.p.map(p => `<p>${esc(p)}</p>`).join("")}
-          ${l.note ? `<div class="lesson-note"><b>Pip's note:</b> ${esc(l.note)}</div>` : ""}
+          ${l.note ? `<div class="lesson-note"><b>Astro's note:</b> ${esc(l.note)}</div>` : ""}
           <div class="voice-line" id="voiceLine">
             <span class="vl-ico">🤖</span>
-            <span><b>Pip-0 says:</b> ${esc(this.voiceLine(st, Session.lesson))}</span>
+            <span><b>Astro says:</b> ${esc(this.voiceLine(st, Session.lesson))}</span>
           </div>
         </div>
       </div>
@@ -4981,7 +3794,7 @@ const Mission = {
     `;
 
     this.syncSpeakBtn();
-    /* Pip speaks the card automatically when voice is on — but only ever
+    /* Astro speaks the card automatically when voice is on — but only ever
        after the child has already clicked something (Talk.unlock). */
     if (Talk.enabled) {
       Session.later(() => Talk.sayCard(st, l), 320);
@@ -5020,7 +3833,7 @@ const Mission = {
       Talk.enabled = true;
       Store.save();
       app.syncToggles();
-      UI.toast("Voice on — Pip will read the cards to you.", "mint");
+      UI.toast("Voice on — Astro will read the cards to you.", "mint");
     }
     const l = st.lessons[Session.lesson];
     Talk.sayCard(st, l);
@@ -5784,7 +4597,7 @@ const Mission = {
     const slot = $("#hintSlot");
     if (!slot) return;
     Session.hintShown = true;
-    slot.innerHTML = `<div class="hint-box"><b>Pip says:</b> ${esc(q.hint)}</div>`;
+    slot.innerHTML = `<div class="hint-box"><b>Astro says:</b> ${esc(q.hint)}</div>`;
     const btn = $("#hintBtn");
     if (btn) btn.style.display = "none";
     Sound.tone(620, "sine", 0.1, 0.05);
@@ -5852,7 +4665,7 @@ const Mission = {
       Sound.wrong();
     }
 
-    /* Pip reacts in context */
+    /* Astro reacts in context */
     if (isCorrect) {
       const lines = [
         "Yes! That is exactly it. " + q.explain,
@@ -5927,7 +4740,7 @@ const Mission = {
     UI.syncHUD();
 
     const praise = pct === 100
-      ? "A perfect score. Pip-0 is doing loops around the room."
+      ? "A perfect score. Astro is doing loops around the room."
       : pct >= 66 ? "Strong work — one small gap to close."
       : "Mission finished. Read the explanations, then run it again for a better score.";
 
@@ -5986,7 +4799,7 @@ const Mission = {
 function sound_open() { Sound.tone(660, "sine", 0.1, 0.05); }
 /*@@END_JS_MISSION@@*/
 /* ============================================================
-   6. PIP-0 — the mission buddy (rule-based, offline, kid-safe)
+   6. ASTRO — the mission buddy (rule-based, offline, kid-safe)
    ============================================================ */
 const Pip = {
   open: false,
@@ -6169,9 +4982,9 @@ const Pip = {
   welcome() {
     const s = Store.state;
     const next = Progress.nextStage();
-    if (!s.name) return "Hi there! I'm Pip-0, your space buddy. Once you have a cadet name, we can start Mission 1 together.";
+    if (!s.name) return "Hi there! I'm Astro, your space buddy. Once you have a cadet name, we can start Mission 1 together.";
     if (s.completed.length >= 7) return `Look at that, ${s.name} — all seven missions done. Ask me anything about the planets, or ask for a joke. I know a lot of jokes.`;
-    if (s.completed.length === 0) return `Hi ${s.name}! I'm Pip-0. Mission 1 is open — poetry in the sky, honestly. Tap the first mission and I will talk you through it.`;
+    if (s.completed.length === 0) return `Hi ${s.name}! I'm Astro. Mission 1 is open — poetry in the sky, honestly. Tap the first mission and I will talk you through it.`;
     return `Welcome back, ${s.name}. Mission ${next ? next.id : 7} — ${next ? next.title : "the Moon"} — is ready when you are. Want a hint, or just a chat?`;
   },
 
@@ -6286,7 +5099,7 @@ const Pip = {
     }
 
     if (/who are you|what are you|your name/.test(t)) {
-      return { text: "I'm Pip-0 — a small helper robot with one big job: keeping you unstuck. I know the missions, the planets and an unreasonable number of space jokes." };
+      return { text: "I'm Astro — a small helper robot with one big job: keeping you unstuck. I know the missions, the planets and an unreasonable number of space jokes." };
     }
 
     if (/my name is |call me /.test(t)) {
@@ -6402,7 +5215,7 @@ const app = {
     if (!Store.state.name) {
       this.openSetup();
     } else {
-      // Pip stays docked as a launcher on every visit — the child opens the chat
+      // Astro stays docked as a launcher on every visit — the child opens the chat
       // when they want it, so it never sits on top of lesson text.
       Pip.toggle(false);
     }
@@ -6564,7 +5377,7 @@ const app = {
       </div>
 
       <div style="margin-top:18px;display:flex;gap:8px;flex-wrap:wrap">
-        <button class="btn btn-ghost btn-sm" onclick="app.askPip('tell me about ${p.id === "sun" ? "the sun" : p.name.toLowerCase()}')">💬 Ask Pip about it</button>
+        <button class="btn btn-ghost btn-sm" onclick="app.askPip('tell me about ${p.id === "sun" ? "the sun" : p.name.toLowerCase()}')">💬 Ask Astro about it</button>
         ${p.id !== "sun" ? `<button class="btn btn-ghost btn-sm" onclick="app.askPip('what is an orbit')">🛰 How does it stay in orbit?</button>` : ""}
       </div>
     `;
@@ -6645,7 +5458,7 @@ const app = {
       vb.textContent = st.voice ? "🔊" : "🔈";
       vb.classList.toggle("is-on", !!st.voice);
       vb.setAttribute("aria-pressed", String(!!st.voice));
-      vb.title = st.voice ? "Pip is reading aloud — tap to mute" : "Tap to let Pip read aloud";
+      vb.title = st.voice ? "Astro is reading aloud — tap to mute" : "Tap to let Astro read aloud";
     }
     const b = $("#btnSound");
     if (b) {
@@ -6672,7 +5485,7 @@ const app = {
     if (st.voice) {
       Talk.unlock();
       speakNow("Voice on. I will read the cards out for you.");
-      UI.toast("Pip will read each card aloud.", "mint");
+      UI.toast("Astro will read each card aloud.", "mint");
     } else {
       Talk.stop();
       UI.toast("Voice off.", "coral");
@@ -6774,38 +5587,7 @@ window.addEventListener("DOMContentLoaded", () => {
   app.init();
   if (window.AstroAuth) AstroAuth.afterInit();
 });
-
-</script>
-
-<style>
-/* AstroCadet expansion pack */
-.extra-view{display:none;max-width:1240px;margin:0 auto;padding:28px 18px 100px}
-.extra-view.active{display:block}
-.extra-hero{padding:24px;border:1px solid rgba(115,150,255,.25);border-radius:24px;background:radial-gradient(ellipse at top right,rgba(94,83,255,.2),transparent 55%),linear-gradient(135deg,rgba(19,31,65,.95),rgba(7,13,30,.95));margin-bottom:20px}
-.extra-hero h2{font-size:clamp(1.6rem,4vw,2.5rem);margin:6px 0 8px}
-.extra-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,260px),1fr));gap:14px}
-.extra-card{padding:18px;border-radius:18px;border:1px solid var(--line,rgba(120,150,220,.22));background:rgba(15,23,48,.82)}
-.extra-card h3{margin:0 0 8px}
-.extra-card p{color:var(--ink-dim,#b9c5e6);line-height:1.55}
-.extra-btn{border:1px solid rgba(115,150,255,.4);border-radius:12px;padding:10px 14px;background:#26356b;color:#fff;font-weight:800;cursor:pointer}
-.extra-btn:hover{filter:brightness(1.18)}
-.extra-btn:disabled{opacity:.5;cursor:not-allowed}
-.video-frame{width:100%;aspect-ratio:16/9;background:#050914;border-radius:14px;overflow:hidden;margin:10px 0}
-.video-frame iframe,.video-frame video{width:100%;height:100%;border:0}
-.game-hud{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:12px 0}
-.game-meter{background:#0b1430;border:1px solid #293b68;border-radius:12px;padding:10px;text-align:center}
-.game-meter b{display:block;font-size:1.2rem;color:#7cecff}
-.lander-stage{height:280px;position:relative;overflow:hidden;border-radius:18px;border:1px solid #34446f;background:linear-gradient(#070d22,#17234c 78%,#7a7185 79%,#a89b8e);touch-action:manipulation}
-.lander-moon{position:absolute;bottom:-42px;left:-5%;width:110%;height:95px;border-radius:50% 50% 0 0;background:#9b9eaa;box-shadow:inset 0 12px 0 #b9bbc5}
-.lander-ship{position:absolute;left:50%;transform:translateX(-50%);font-size:38px;filter:drop-shadow(0 0 8px #74eaff);transition:top .1s linear}
-.lander-flame{font-size:20px;text-align:center;color:#ffcc70;display:none}
-.lander-controls{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px}
-.lander-controls button{min-height:48px;touch-action:manipulation}
-.quiz-options{display:grid;gap:8px;margin-top:12px}
-.quiz-options button{text-align:left}
-@media(max-width:560px){.game-hud{grid-template-columns:repeat(3,1fr)}.lander-stage{height:240px}.extra-view{padding:18px 12px 100px}}
-</style>
-<script>
+;
 (function(){
 "use strict";
 const $x=(s,r=document)=>r.querySelector(s);
@@ -6836,13 +5618,112 @@ function showExtra(id){
  if(id==='cinema')renderCinema(); if(id==='lab')renderLab();
 }
 const cinemaItems=[
- {id:'sun',title:'Our Sun: a star up close',desc:'Discover the star that gives Earth light and warmth.',url:'https://www.youtube-nocookie.com/embed/2HoTK_GGI9Q',source:'NASA / Solar System Exploration',quiz:'What is the Sun?',opts:['A star','A planet','A moon'],correct:0},
- {id:'moon',title:'The Moon and its phases',desc:'See why the Moon looks different through the month.',url:'https://www.youtube-nocookie.com/embed/6AviDjR9mmo',source:'NASA educational animation',quiz:'What causes the Moon’s phases?',opts:['Earth’s shadow every night','Our changing view of its sunlit half','The Moon makes its own light'],correct:1},
- {id:'mars',title:'Mars: the red planet',desc:'Explore a world with giant volcanoes and ancient river valleys.',url:'https://www.youtube-nocookie.com/embed/D8pnmwOXhoY',source:'NASA rover and Mars mission footage',quiz:'Why does Mars look reddish?',opts:['Iron-rich dust and rocks','Red clouds','Its oceans'],correct:0}
+ {id:'rocket-basics',title:'How Do We Launch Things Into Space?',desc:'A friendly introduction to rockets, fuel, gravity, and how spacecraft leave Earth.',videoUrl:'https://spaceplace.nasa.gov/review/launching-into-space/how-do-we-launch-things-into-space_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/launching-into-space/en/',category:'Rockets',audience:'kids',ageLabel:'6–13',icon:'🚀',source:'NASA Space Place',quiz:'What gives a rocket the push it needs to lift off?',opts:['Thrust from its engines','Wings like an airplane','Light from the Moon'],correct:0},
+ {id:'solar-eclipse',title:'What Is a Solar Eclipse?',desc:'Discover what happens when the Moon moves between the Sun and Earth.',videoUrl:'https://spaceplace.nasa.gov/review/eclipse-snap/what-is-a-solar-eclipse_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/eclipse-snap/en/',category:'Sun & Earth',audience:'kids',ageLabel:'6–13',icon:'🌞',source:'NASA Space Place',quiz:'What moves between the Sun and Earth during a solar eclipse?',opts:['The Moon','Mars','A satellite'],correct:0},
+ {id:'earth-water',title:'How Much Water Is on Earth?',desc:'Explore oceans, ice, groundwater, and why water makes our planet special.',videoUrl:'https://spaceplace.nasa.gov/review/water/how-much-water-is-on-earth_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/water/en/',category:'Earth science',audience:'kids',ageLabel:'6–13',icon:'🌍',source:'NASA Space Place',quiz:'About how much of Earth’s surface is covered by water?',opts:['71%','10%','Almost 100%'],correct:0},
+ {id:'planet-moons',title:'How Many Moons Does Each Planet Have?',desc:'Take a tour of the moons orbiting planets across our solar system.',videoUrl:'https://spaceplace.nasa.gov/review/how-many-moons/our-moon-isnt-the-only-moon_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/how-many-moons/en/',category:'Solar system',audience:'kids',ageLabel:'6–13',icon:'🌙',source:'NASA Space Place',quiz:'Which planet has just one natural moon?',opts:['Earth','Jupiter','Mars'],correct:0},
+ {id:'blue-sky',title:'Why Is the Sky Blue?',desc:'A colorful explanation of sunlight, the atmosphere, and scattering.',videoUrl:'https://spaceplace.nasa.gov/review/blue-sky/why-is-the-sky-blue_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/blue-sky/en/',category:'Earth science',audience:'kids',ageLabel:'6–13',icon:'🌈',source:'NASA Space Place',quiz:'Why does the sky usually look blue?',opts:['Air scatters blue light more','The oceans reflect blue paint','The Sun only makes blue light'],correct:0},
+ {id:'aurora',title:'What Is an Aurora?',desc:'Find out how the Sun and Earth’s magnetic field create glowing sky displays.',videoUrl:'https://spaceplace.nasa.gov/review/aurora/what-is-an-aurora_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/aurora/en/',category:'Sun & Earth',audience:'kids',ageLabel:'8–13',icon:'✨',source:'NASA Space Place',quiz:'What helps guide charged particles toward the polar regions?',opts:['Earth’s magnetic field','Ocean currents','The Moon’s light'],correct:0},
+ {id:'nebula-kids',title:'What Is a Nebula?',desc:'Meet giant clouds of gas and dust where stars can form.',videoUrl:'https://spaceplace.nasa.gov/review/nebula/what-is-a-nebula_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/nebula/en/',category:'Stars & galaxies',audience:'kids',ageLabel:'9–13',icon:'🌌',source:'NASA Space Place',quiz:'What is a nebula mainly made of?',opts:['Gas and dust','Liquid water','Solid metal'],correct:0},
+ {id:'oort-cloud',title:'Where Does the Solar System End?',desc:'Travel far beyond the planets and learn about the distant Oort Cloud.',videoUrl:'https://spaceplace.nasa.gov/review/oort-cloud/where-does-the-solar-system-end_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/oort-cloud/en/',category:'Solar system',audience:'kids',ageLabel:'9–13',icon:'☄️',source:'NASA Space Place',quiz:'What icy objects may come from the Oort Cloud?',opts:['Some comets','Volcanoes','Stars'],correct:0},
+ {id:'exoplanets-kids',title:'Searching for Other Planets Like Ours',desc:'Learn how scientists look for planets orbiting stars beyond our Sun.',videoUrl:'https://spaceplace.nasa.gov/review/exoplanet-snap/searching-for-other-planets-like-ours_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/exoplanet-snap/en/',category:'Planets beyond',audience:'kids',ageLabel:'10–13',icon:'🪐',source:'NASA Space Place',quiz:'What is an exoplanet?',opts:['A planet orbiting another star','A moon of Earth','A kind of asteroid'],correct:0},
+ {id:'solar-fusion',title:'Where Does the Sun’s Energy Come From?',desc:'A deeper look at the Sun’s core and the nuclear fusion that powers it.',videoUrl:'https://spaceplace.nasa.gov/review/sun-heat/where-does-the-suns-energy-come-from_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/sun-heat/en/',category:'Astrophysics',audience:'advanced',ageLabel:'14+',icon:'☀️',source:'NASA Space Place',quiz:'Which process releases energy in the Sun’s core?',opts:['Nuclear fusion','Evaporation','Friction with space'],correct:0},
+ {id:'black-holes',title:'What Is a Black Hole?',desc:'Explore extreme gravity, the event horizon, and what makes black holes unusual.',videoUrl:'https://spaceplace.nasa.gov/review/black-holes/what-is-a-black-hole_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/black-holes/en/',category:'Astrophysics',audience:'advanced',ageLabel:'14+',icon:'🕳️',source:'NASA Space Place',quiz:'What is the event horizon?',opts:['The boundary beyond which light cannot escape','The edge of the solar system','The surface of a star'],correct:0},
+ {id:'solar-system-formation',title:'How Did the Solar System Form?',desc:'Follow the science of a collapsing cloud of gas and dust becoming the Sun and planets.',videoUrl:'https://spaceplace.nasa.gov/review/solar-system-formation/the-solar-systems-formation_1280x720.mp4',pageUrl:'https://spaceplace.nasa.gov/solar-system-formation/en/',category:'Planetary science',audience:'advanced',ageLabel:'14+',icon:'🪐',source:'NASA Space Place',quiz:'About how long ago did our solar system begin forming?',opts:['4.6 billion years ago','4.6 million years ago','46 thousand years ago'],correct:0},
+ {id:'nebula-advanced',title:'Nebulae and Star Formation',desc:'Go deeper into how gravity gathers interstellar gas and dust to begin forming stars.',videoUrl:'https://spaceplace.nasa.gov/review/nebula/what-is-a-nebula_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/nebula/en/',category:'Astrophysics',audience:'advanced',ageLabel:'14+',icon:'🌠',source:'NASA Space Place',quiz:'What can gravity do inside a nebula?',opts:['Pull gas and dust into denser clumps','Turn gas directly into planets instantly','Stop stars from forming'],correct:0},
+ {id:'exoplanets-advanced',title:'How Scientists Search for Exoplanets',desc:'Learn about the transit method and how tiny changes in starlight reveal distant worlds.',videoUrl:'https://spaceplace.nasa.gov/review/exoplanet-snap/searching-for-other-planets-like-ours_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/exoplanet-snap/en/',category:'Planetary science',audience:'advanced',ageLabel:'14+',icon:'🔭',source:'NASA Space Place',quiz:'What can happen to a star’s brightness when a planet transits in front of it?',opts:['It dims slightly','It disappears forever','It changes into a planet'],correct:0}
 ];
+let selectedCinemaId=cinemaItems[0].id;
+let cinemaSearch='';
+let cinemaCategory='All';
+let cinemaAudience='kids';
+
+function cinemaPlayer(){
+ const v=cinemaItems.find(x=>x.id===selectedCinemaId)||cinemaItems[0];
+ const player=$x('#cinema-player');if(!player)return;
+ player.innerHTML=`<div class="cinema-now-playing">
+  <div class="cinema-player-frame">
+   <video class="cinema-native-video" controls playsinline preload="metadata" poster="" aria-label="${safe(v.title)}">
+    <source src="${v.videoUrl}" type="video/mp4">
+    Your browser does not support HTML5 video.
+   </video>
+  </div>
+  <div class="cinema-player-meta">
+   <span class="cinema-eyebrow">NOW PLAYING · ${safe(v.category)} · ${safe(v.ageLabel)}</span>
+   <h3>${safe(v.title)}</h3><p>${safe(v.desc)}</p>
+   <small>Video source: ${safe(v.source)} · <a href="${v.pageUrl}" target="_blank" rel="noopener noreferrer">NASA lesson and transcript</a></small>
+   <button class="extra-btn cinema-quiz-launch" onclick="AstroExtra.quizVideo('${v.id}')">🧠 Take this video’s quiz</button>
+   <div id="video-quiz-${v.id}"></div>
+   <p class="cinema-player-note">If playback does not start, check your internet connection or try another NASA video.</p>
+  </div>
+ </div>`;
+ const video=player.querySelector('video');
+ if(video){
+  video.addEventListener('error',function(){
+   const note=player.querySelector('.cinema-player-note');
+   if(note)note.innerHTML='This video could not load right now. <a href="'+v.pageUrl+'" target="_blank" rel="noopener noreferrer">Open the official NASA lesson</a>.';
+  },{once:true});
+ }
+}
+function cinemaGrid(){
+ const grid=$x('#cinema-grid');if(!grid)return;
+ const q=cinemaSearch.trim().toLowerCase();
+ const shown=cinemaItems.filter(v=>(cinemaAudience==='all'||v.audience===cinemaAudience)
+  &&(cinemaCategory==='All'||v.category===cinemaCategory)
+  &&(!q||(v.title+' '+v.desc+' '+v.category+' '+v.ageLabel).toLowerCase().includes(q)));
+ grid.innerHTML=shown.length?shown.map(v=>`<button type="button" class="cinema-video-card ${v.id===selectedCinemaId?'is-selected':''}" onclick="AstroExtra.playCinema('${v.id}')" aria-pressed="${v.id===selectedCinemaId}">
+  <span class="cinema-thumb cinema-thumb-art"><span class="cinema-thumb-icon" aria-hidden="true">${v.icon}</span><span class="cinema-play" aria-hidden="true">▶</span><span class="cinema-age">${safe(v.ageLabel)}</span></span>
+  <span class="cinema-card-copy"><small>${safe(v.category)}</small><b>${safe(v.title)}</b><span>${safe(v.desc)}</span></span>
+ </button>`).join(''):'<p class="cinema-empty">No videos match this selection. Try another age group or search term.</p>';
+}
 function renderCinema(){
  const el=$x('#extra-cinema');if(!el)return;
- el.innerHTML=`<div class="extra-hero"><div>🎬 ASTROCINEMA</div><h2>Big discoveries. Tiny screen.</h2><p>Watch a space story, then answer a quick question to earn a one-time Star bonus. Videos are embedded from YouTube; an internet connection is required.</p></div><div class="extra-grid">${cinemaItems.map(v=>`<article class="extra-card"><h3>${v.title}</h3><p>${v.desc}</p><div class="video-frame"><iframe loading="lazy" title="${safe(v.title)}" src="${v.url}" allow="accelerometer; autoplay; encrypted-media; picture-in-picture" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe></div><p><small>Source: ${v.source}. If playback is unavailable in your region, try the source link below.</small></p><p><a href="${v.url.replace('/embed/','/watch?v=')}" target="_blank" rel="noopener noreferrer">Open video on YouTube ↗</a></p><button class="extra-btn" onclick="AstroExtra.quizVideo('${v.id}')">🧠 Take video quiz</button><div id="video-quiz-${v.id}"></div></article>`).join('')}</div>`;
+ const categories=['All',...new Set(cinemaItems.filter(v=>cinemaAudience==='all'||v.audience===cinemaAudience).map(v=>v.category))];
+ el.innerHTML=`<div class="extra-hero cinema-hero">
+  <div>🎬 ASTRO CINEMA</div><h2>NASA science films for every curious mind</h2>
+  <p>Choose an age group, watch official NASA Space Place videos right here, and test what you learned. The videos use NASA-hosted MP4 files, so the YouTube Error 153 player issue is avoided.</p>
+  <div class="cinema-hero-stats"><span>🎞️ ${cinemaItems.length} learning picks</span><span>🛰️ Official NASA sources</span><span>⭐ Video quizzes</span></div>
+ </div>
+ <section class="cinema-feature" aria-label="Selected video">
+  <div class="cinema-section-heading"><div><small>ASTRO CINEMA THEATER</small><h2>Now showing</h2></div><span class="cinema-live-dot">● PLAYS INSIDE ASTRO JR</span></div>
+  <div id="cinema-player"></div>
+ </section>
+ <section class="cinema-library">
+  <div class="cinema-section-heading"><div><small>VIDEO LIBRARY</small><h2>Choose your next discovery</h2></div><span class="cinema-count">${cinemaItems.length} videos</span></div>
+  <div class="cinema-tools">
+   <label class="cinema-age-label" for="cinema-audience">Choose an age group</label>
+   <select id="cinema-audience" class="cinema-audience" onchange="AstroExtra.audienceCinema(this.value)">
+    <option value="kids" ${cinemaAudience==='kids'?'selected':''}>Kids · up to 13 years</option>
+    <option value="advanced" ${cinemaAudience==='advanced'?'selected':''}>Older learners · 14+</option>
+    <option value="all" ${cinemaAudience==='all'?'selected':''}>Show all videos</option>
+   </select>
+   <input id="cinema-search" type="search" placeholder="Search rockets, planets, black holes…" aria-label="Search videos" oninput="AstroExtra.filterCinema(this.value)">
+   <div class="cinema-categories">${categories.map(c=>`<button type="button" class="cinema-filter ${c===cinemaCategory?'active':''}" onclick="AstroExtra.categoryCinema('${safe(c)}')">${safe(c)}</button>`).join('')}</div>
+  </div>
+  <div class="cinema-video-grid" id="cinema-grid"></div>
+ </section>
+ <p class="cinema-footnote">All videos are played from NASA Space Place MP4 files inside this page. An internet connection is required. NASA lesson pages include explanations and transcripts.</p>
+ <p class="cinema-source-note">Sources: <a href="https://spaceplace.nasa.gov/menu/videos/" target="_blank" rel="noopener noreferrer">NASA Space Place video library</a>. Content is presented for educational use with source attribution.</p>`;
+ cinemaPlayer();cinemaGrid();
+}
+function playCinema(id){if(!cinemaItems.some(v=>v.id===id))return;selectedCinemaId=id;cinemaPlayer();cinemaGrid();$x('#cinema-player')?.scrollIntoView({behavior:'smooth',block:'nearest'});}
+function filterCinema(value){cinemaSearch=String(value||'');cinemaGrid();}
+function categoryCinema(value){
+ cinemaCategory=value;
+ const tools=$x('.cinema-categories');
+ if(tools)$$x('button',tools).forEach(b=>b.classList.toggle('active',b.textContent===value));
+ cinemaGrid();
+}
+function audienceCinema(value){
+ cinemaAudience=['kids','advanced','all'].includes(value)?value:'kids';
+ cinemaCategory='All';
+ const categories=['All',...new Set(cinemaItems.filter(v=>cinemaAudience==='all'||v.audience===cinemaAudience).map(v=>v.category))];
+ const holder=$x('.cinema-categories');
+ if(holder)holder.innerHTML=categories.map(c=>`<button type="button" class="cinema-filter ${c===cinemaCategory?'active':''}" onclick="AstroExtra.categoryCinema('${safe(c)}')">${safe(c)}</button>`).join('');
+ const available=cinemaItems.filter(v=>cinemaAudience==='all'||v.audience===cinemaAudience);
+ if(!available.some(v=>v.id===selectedCinemaId)){selectedCinemaId=available[0].id;cinemaPlayer();}
+ const count=$x('.cinema-count');if(count)count.textContent=available.length+' videos';
+ cinemaGrid();
 }
 function quizVideo(id){
  const v=cinemaItems.find(x=>x.id===id);if(!v)return;
@@ -6886,34 +5767,44 @@ function puzzle(id,i){
  else f.textContent='Not quite. Think about the science clue and try again.';
 }
 function aiAnswer(q){
- const text=q.toLowerCase();
+ const text=String(q||'').toLowerCase().trim();
  const facts=[
- [/gravity|gravitation/,'Gravity is the attraction between objects with mass. On the Moon, gravity is about one-sixth as strong as on Earth, so you would weigh less there.'],
- [/orbit|satellite/,'An orbit is a path around an object. A satellite moves forward while gravity continually bends its path, so it keeps falling around Earth rather than straight down.'],
- [/black hole/,'A black hole is a region where gravity is so strong that beyond its event horizon, light cannot escape. Scientists study them by observing nearby stars, hot gas, and gravitational waves.'],
- [/sun|star/,'The Sun is a star: a huge ball of hot plasma that makes energy by nuclear fusion in its core. It is the main source of light and heat for Earth.'],
- [/mars/,'Mars is a rocky planet with a thin atmosphere, dusty red surface, enormous volcanoes, and evidence that liquid water once flowed there.'],
- [/moon|lunar/,'The Moon is Earth’s natural satellite. It has weaker gravity than Earth and almost no atmosphere, so landers use rocket engines rather than parachutes.'],
- [/planet/,'A planet orbits a star, is massive enough to become nearly round, and has cleared most other objects from its orbital neighborhood. Our Solar System has eight planets.'],
- [/rocket|fuel/,'A rocket moves by pushing exhaust backward; the exhaust pushes the rocket forward. This works even in space because it does not need air.'],
- [/light|rainbow|colour|color/,'White light contains many wavelengths. A prism bends different wavelengths by different amounts, spreading the light into a rainbow of colours.'],
- [/hello|hi|hey/,'Hello, cadet! I’m Pip-0. Ask me about planets, gravity, rockets, stars, or say “quiz me” for a quick science challenge.'],
- [/quiz|test me|question me/,'Quick quiz: Which planet is known as the Red Planet? Reply “Mars”, “Jupiter”, or “Venus”.'],
- [/hint|help/,'Pip-0 hint: break the problem into one small step. Think about gravity, motion, and energy, then try one answer at a time.']
+  [/\b(hello|hi|hey|good morning|good evening)\b/,'Hello, cadet! 🚀 I’m Astro, your curious space buddy. Ask me about science, space, school topics, or everyday questions. What shall we explore?'],
+  [/\b(your name|who are you|what are you)\b/,'I’m Astro, the friendly guide aboard Astro Jr! I can explain ideas, share space facts, help you think through a question, and give you a mini-quiz.'],
+  [/\b(gravity|gravitation|weight)\b/,'Gravity is the attraction between objects that have mass. It keeps planets moving around the Sun and keeps us on the ground. The Moon’s surface gravity is about one-sixth of Earth’s.'],
+  [/\b(orbit|satellite)\b/,'An orbit is the curved path one object follows around another. A satellite keeps moving forward while gravity continually bends its path, so it keeps falling around Earth instead of straight down.'],
+  [/\b(black hole)\b/,'A black hole is a region of space where gravity is so strong that, past its event horizon, even light cannot escape. Scientists study black holes by observing their effects on nearby matter and light.'],
+  [/\b(sun|solar energy|sunlight)\b/,'The Sun is a star at the center of our Solar System. It releases energy through nuclear fusion in its core, giving Earth much of the light and warmth needed for life.'],
+  [/\b(mars|red planet)\b/,'Mars is a rocky planet often called the Red Planet because iron-rich minerals in its dust have rusted. It has giant volcanoes, polar ice, and evidence that liquid water once flowed on its surface.'],
+  [/\b(moon|lunar|moon phases)\b/,'The Moon is Earth’s natural satellite. Its phases happen because, as it orbits Earth, we see different portions of its half-lit side. The Moon does not make its own light; it reflects sunlight.'],
+  [/\b(planet|solar system)\b/,'Our Solar System has eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. They all orbit the Sun. Pluto is classified as a dwarf planet.'],
+  [/\b(rocket|how do rockets work)\b/,'A rocket pushes hot exhaust backward. The exhaust pushes the rocket forward in the opposite direction. That is why rockets can work in space without needing air to push against.'],
+  [/\b(star|stars|constellation)\b/,'A star is a huge, glowing ball of hot gas (plasma) that produces energy in its core. Our Sun is the closest star to Earth. Other stars look tiny because they are extremely far away.'],
+  [/\b(galaxy|milky way)\b/,'A galaxy is a huge collection of stars, gas, dust, and dark matter held together by gravity. Our Solar System is inside the Milky Way galaxy.'],
+  [/\b(comet|asteroid|meteor)\b/,'Asteroids are rocky objects that orbit the Sun. Comets contain ice, dust, and rock and can grow glowing comas and tails near the Sun. A meteor is the streak of light made when a space rock enters an atmosphere.'],
+  [/\b(light|rainbow|colour|color)\b/,'Visible white light is made of different colors. A prism can bend the colors by different amounts and spread them into a rainbow.'],
+  [/\b(aurora|northern lights)\b/,'Auroras are colorful lights in the sky. They happen when charged particles from space interact with gases in Earth’s upper atmosphere, guided by Earth’s magnetic field.'],
+  [/\b(exoplanet)\b/,'An exoplanet is a planet that orbits a star beyond our Solar System. Astronomers often find them by noticing a star dim slightly when a planet passes in front of it.'],
+  [/\b(quiz|test me|question me)\b/,'Mini-quiz time, cadet! 🌟 Which planet is famous for its beautiful rings? A) Mars  B) Saturn  C) Mercury. Type A, B, or C and I’ll check your answer.'],
+  [/\b(thank you|thanks)\b/,'You’re welcome, cadet! Keep asking questions — curiosity is your superpower. ✨'],
+  [/\b(help|explain|how do i learn)\b/,'Absolutely! Tell me the topic and I’ll break it into small, clear steps, give you an example, and check your understanding.']
  ];
- for(const [re,a] of facts)if(re.test(text))return a;
- return 'That is a great science question! I’m using my built-in science guide right now. Try asking about gravity, the Moon, Mars, orbits, rockets, the Sun, or light. For open-ended answers, connect an AI provider in the optional server configuration described in the project README.';
+ for(const [pattern,answer] of facts){if(pattern.test(text))return answer;}
+ if(/\b(what|why|how|when|where|who|can|does|do|is|are|explain|tell me)\b/.test(text)){
+  return 'That’s a thoughtful question, cadet! I don’t have a live AI brain connected in this browser-only version, so I may not know the exact answer yet. I can still help you explore it: try adding a little context or splitting it into smaller questions. For open-ended answers on any topic, connect a secure AI service through your own server using ASTROCADET_AI_ENDPOINT — never put a private API key in this file.';
+ }
+ return 'I’m listening, cadet! 🚀 I can chat about space and science, help explain a school topic, or make a mini-quiz. For a question outside my built-in guide, Astro needs a secure AI service connected through a backend.';
 }
 async function askPip(q){
  const log=$x('#pipLog');if(!log)return;
  const row=(who,txt)=>{const d=document.createElement('div');d.className='pip-msg '+who;d.textContent=txt;log.appendChild(d);log.scrollTop=log.scrollHeight};
  row('cadet',q);const s=state();if(s){s.pipAsked=(s.pipAsked||0)+1;save()}
  let answer='';
- const endpoint=window.ASTROCADET_AI_ENDPOINT || "/api/tutor";
+ const endpoint=window.ASTROCADET_AI_ENDPOINT || "";
  if(endpoint){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,level:s&&s.learningLevel||'curious explorer'})});if(!r.ok)throw Error('AI endpoint unavailable');const d=await r.json();answer=d.answer||d.reply||''}catch(e){answer=aiAnswer(q)+' (Offline fallback — the AI service could not be reached.)'}}
  else answer=aiAnswer(q);
  row('pip',answer);
- if(s&&/quiz me|quick quiz/i.test(q))setTimeout(()=>{const ans=prompt('Pip-0 quiz: Which planet is called the Red Planet?');if(ans&&/mars/i.test(ans))awardOnce('pip-quiz-'+new Date().toISOString().slice(0,10),3,'Pip-0 quiz')},50);
+ if(s&&/quiz me|quick quiz/i.test(q))setTimeout(()=>{const ans=prompt('Astro quiz: Which planet is called the Red Planet?');if(ans&&/mars/i.test(ans))awardOnce('pip-quiz-'+new Date().toISOString().slice(0,10),3,'Astro quiz')},50);
 }
 function initPip(){
  const form=$x('#pipForm');if(!form||form.dataset.extraBound)return;form.dataset.extraBound='1';
@@ -6924,7 +5815,7 @@ function openLunarRescue(){
  const overlay=$x('#missionOverlay');$x('#missionKicker').textContent='MISSION 07 · SPECIAL SIMULATOR';$x('#missionTitle').textContent='Lunar Rescue';
  $x('#lessonDots').innerHTML='';
  const body=$x('#missionBody');$x('#missionFoot').innerHTML='<button class="btn btn-ghost" onclick="app.closeMission()">Close simulator</button><button class="btn btn-primary" onclick="AstroExtra.startLander()">↻ Restart flight</button>';
- body.innerHTML=`<div class="extra-hero"><h2>🌕 Lunar Rescue</h2><p>Bring the rescue lander down safely. Use short engine burns to reduce speed, keep fuel for the final approach, and touch down below 3 m/s.</p><label for="lander-difficulty">Difficulty</label> <select id="lander-difficulty" class="extra-btn" onchange="AstroExtra.startLander()"><option value="easy">Cadet · gentle gravity</option><option value="normal" selected>Pilot · balanced</option><option value="expert">Commander · tight fuel</option></select></div><div class="game-hud"><div class="game-meter">ALTITUDE<b id="lander-alt">1200 m</b></div><div class="game-meter">SPEED<b id="lander-speed">18 m/s</b></div><div class="game-meter">FUEL<b id="lander-fuel">100%</b></div></div><div class="lander-stage" id="lander-stage"><div style="position:absolute;top:12px;left:12px;color:#b9d7ff">MISSION CONTROL · MOON</div><div class="lander-ship" id="lander-ship" style="top:22px">🚀<div class="lander-flame" id="lander-flame">🔥</div></div><div class="lander-moon"></div><div id="lander-pad" style="position:absolute;bottom:44px;left:43%;width:14%;height:5px;background:#5ff0b6;box-shadow:0 0 12px #5ff0b6"></div></div><p id="lander-message" aria-live="polite">Pip-0: Short burns are safer than waiting until the last second.</p><div class="lander-controls"><button class="extra-btn" onclick="AstroExtra.burn(-1)">↖ LEFT</button><button class="extra-btn" onclick="AstroExtra.burn(1)">🔥 BURN</button><button class="extra-btn" onclick="AstroExtra.burn(0)">RIGHT ↗</button></div><p><small>Keyboard: Space = burn, ← / → = steer. On mobile, tap the controls.</small></p>`;
+ body.innerHTML=`<div class="extra-hero"><h2>🌕 Lunar Rescue</h2><p>Bring the rescue lander down safely. Use short engine burns to reduce speed, keep fuel for the final approach, and touch down below 3 m/s.</p><label for="lander-difficulty">Difficulty</label> <select id="lander-difficulty" class="extra-btn" onchange="AstroExtra.startLander()"><option value="easy">Cadet · gentle gravity</option><option value="normal" selected>Pilot · balanced</option><option value="expert">Commander · tight fuel</option></select></div><div class="game-hud"><div class="game-meter">ALTITUDE<b id="lander-alt">1200 m</b></div><div class="game-meter">SPEED<b id="lander-speed">18 m/s</b></div><div class="game-meter">FUEL<b id="lander-fuel">100%</b></div></div><div class="lander-stage" id="lander-stage"><div style="position:absolute;top:12px;left:12px;color:#b9d7ff">MISSION CONTROL · MOON</div><div class="lander-ship" id="lander-ship" style="top:22px">🚀<div class="lander-flame" id="lander-flame">🔥</div></div><div class="lander-moon"></div><div id="lander-pad" style="position:absolute;bottom:44px;left:43%;width:14%;height:5px;background:#5ff0b6;box-shadow:0 0 12px #5ff0b6"></div></div><p id="lander-message" aria-live="polite">Astro: Short burns are safer than waiting until the last second.</p><div class="lander-controls"><button class="extra-btn" onclick="AstroExtra.burn(-1)">↖ LEFT</button><button class="extra-btn" onclick="AstroExtra.burn(1)">🔥 BURN</button><button class="extra-btn" onclick="AstroExtra.burn(0)">RIGHT ↗</button></div><p><small>Keyboard: Space = burn, ← / → = steer. On mobile, tap the controls.</small></p>`;
  overlay.classList.add('is-open');overlay.setAttribute('aria-hidden','false');startLander();
 }
 function startLander(){
@@ -6938,7 +5829,7 @@ function updateGame(){
  const a=$x('#lander-alt'),s=$x('#lander-speed'),f=$x('#lander-fuel'),ship=$x('#lander-ship');if(!a||!ship)return;
  a.textContent=Math.max(0,Math.round(game.alt))+' m';s.textContent=Math.max(0,game.speed).toFixed(1)+' m/s';f.textContent=Math.round(game.fuel)+'%';
  ship.style.top=(18+(1-game.alt/1200)*185)+'px';ship.style.left=game.x+'%';
- const msg=$x('#lander-message');if(msg&&game.fuel<20)msg.textContent='Pip-0: Fuel is low! Use small burns and aim for a gentle touchdown.';
+ const msg=$x('#lander-message');if(msg&&game.fuel<20)msg.textContent='Astro: Fuel is low! Use small burns and aim for a gentle touchdown.';
 }
 function tick(){
  if(!game||game.done)return;
@@ -6948,7 +5839,7 @@ function tick(){
   const safe=game.speed<=3.2&&game.fuel>=0&&game.x>30&&game.x<70;
   const msg=$x('#lander-message');
   if(safe){msg.textContent='🌟 Touchdown! Rescue team is safe. '+(game.fuel>=20?'Bonus objective complete: 20% fuel remaining!':'Safe landing medal earned!');awardOnce('lunar-rescue-'+game.diff,game.diff==='expert'?18:game.diff==='normal'?15:12,'Lunar Rescue');awardOnce('lunar-medal-'+game.diff,0,'Lunar Rescue medal');if(game.fuel>=20)awardOnce('lunar-bonus-'+game.diff,5,'Fuel saver bonus')}
-  else msg.textContent='Pip-0: The landing was too rough or off the pad. Restart and burn earlier in short bursts.';
+  else msg.textContent='Astro: The landing was too rough or off the pad. Restart and burn earlier in short bursts.';
   return;
  }
  updateGame();
@@ -6957,7 +5848,7 @@ function burn(dir){
  if(!game||game.done)return;
  if(dir===0){game.x=Math.min(82,game.x+4);game.bonus=true;return}
  if(dir===-1){game.x=Math.max(18,game.x-4);game.bonus=true;return}
- if(game.fuel<=0){$x('#lander-message').textContent='Pip-0: No fuel left. Restart and use shorter burns.';return}
+ if(game.fuel<=0){$x('#lander-message').textContent='Astro: No fuel left. Restart and use shorter burns.';return}
  game.fuel=Math.max(0,game.fuel-7);game.speed=Math.max(0,game.speed-game.thrust*2.8);
  $x('#lander-flame').style.display='block';setTimeout(()=>{const flame=$x('#lander-flame');if(flame)flame.style.display='none'},180);
  updateGame();
@@ -6970,22 +5861,234 @@ function missionOverride(){
  const oldClose=app.closeMission.bind(app);
  app.closeMission=function(){if(game&&game.timer)clearInterval(game.timer);game=null;oldClose()};
 }
+
+function renderContact(){
+ const el=$x('#extra-contact');if(!el||el.dataset.rendered)return;
+ el.dataset.rendered='1';
+ el.innerHTML=`<div class="extra-hero"><div>✉️ MISSION CONTROL</div><h2>Contact Us</h2><p>Have a question, idea, or need help with Astro Jr? Send a message to our team.</p></div>
+ <div class="contact-layout"><form class="astro-contact-form" id="astroContactForm" action="https://formspree.io/f/xkjrojzo" method="POST">
+  <label for="astroContactName">Name</label><input id="astroContactName" name="name" type="text" maxlength="80" autocomplete="name" required placeholder="Your name">
+  <label for="astroContactEmail">Email</label><input id="astroContactEmail" name="email" type="email" maxlength="120" autocomplete="email" required placeholder="you@example.com">
+  <label for="astroContactSubject">Subject / Issue Type</label><select id="astroContactSubject" name="subject" required><option value="">Choose a topic</option><option>General question</option><option>Bug or technical issue</option><option>Account or progress help</option><option>Suggestion or feedback</option><option>Other</option></select>
+  <label for="astroContactMessage">Message</label><textarea id="astroContactMessage" name="message" rows="6" maxlength="3000" required placeholder="Tell us how we can help…"></textarea>
+  <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-5000px" />
+  <input type="hidden" name="_subject" value="New Astro Jr Contact Us message">
+  <button class="extra-btn contact-submit" id="astroContactSubmit" type="submit">Send message ✨</button>
+  <p class="contact-note" id="astroContactStatus" role="status" aria-live="polite">Your message will be sent securely through our contact form.</p>
+ </form><aside class="contact-aside"><div class="contact-orbit" aria-hidden="true">🪐</div><h3>Mission Control is listening</h3><p>We welcome questions, ideas, and friendly feedback from our young explorers.</p><a href="mailto:astronautjr.space@gmail.com">astronautjr.space@gmail.com</a></aside></div>`;
+ const form=$x('#astroContactForm');if(form&&!form.dataset.bound){form.dataset.bound='1';form.addEventListener('submit',async e=>{
+  e.preventDefault();
+  const status=$x('#astroContactStatus'),button=$x('#astroContactSubmit');
+  if(!form.reportValidity())return;
+  const originalText=button.textContent;
+  button.disabled=true;button.textContent='Sending…';status.textContent='Sending your message…';status.style.color='';
+  try{
+   const response=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
+   if(response.ok){status.textContent='✓ Message sent successfully! Thank you for contacting Astro Jr.';status.style.color='#38c98a';form.reset();}
+   else{
+    let data={};try{data=await response.json()}catch(_error){}
+    const detail=data.errors?.map(error=>error.message).filter(Boolean).join(' ');
+    throw new Error(detail||'The message could not be sent. Please try again.');
+   }
+  }catch(error){status.textContent='✕ '+(error.message||'Something went wrong. Please check your connection and try again.');status.style.color='#ff7777';}
+  finally{button.disabled=false;button.textContent=originalText;}
+ });}
+}
 function install(){
  if(!window.AstroCadet||!window.app){setTimeout(install,60);return}
- addTab('🎬 AstroCinema','cinema');addTab('🧪 Training Lab','lab');
- addView('cinema');addView('lab');
+ addTab('🎬 AstroCinema','cinema');addTab('🧪 Training Lab','lab');addTab('✉️ Contact Us','contact');
+ addView('cinema');addView('lab');addView('contact');renderContact();
  initPip();missionOverride();
  const s=state();if(s){s.version=4;s.extraRewards=s.extraRewards||{};save()}
- // Pip can be opened by existing UI; bind capture so this enhanced tutor owns new questions.
+ // Astro can be opened by existing UI; bind capture so this enhanced tutor owns new questions.
  const form=$x('#pipForm');if(form&&!form.dataset.extraCapture){form.dataset.extraCapture='1';form.addEventListener('submit',e=>{e.preventDefault();e.stopImmediatePropagation();const i=$x('#pipInput');const q=i.value.trim();if(q){i.value='';askPip(q)}},true)}
  document.addEventListener('keydown',keyGame);
  // Switching back to any original section hides the added screens.
  const nav=$x('.tabs'); if(nav) nav.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b){$$x('.extra-view').forEach(v=>v.classList.remove('active'));$$x('.tabs .tab').forEach(t=>t.classList.toggle('is-active',t===b));}});
 }
-window.AstroExtra={quizVideo,answerVideo,daily,discovery,puzzle,askPip,startLander,burn};
+window.AstroExtra={quizVideo,answerVideo,playCinema,filterCinema,categoryCinema,audienceCinema,daily,discovery,puzzle,askPip,startLander,burn};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
 })();
-</script>
 
-</body>
-</html>
+;
+/* Astronaut Jr — language switcher (Arabic / English / Spanish).
+   English text in the page is the source. Add more lines to DICT to translate more. */
+(function () {
+  "use strict";
+  const EMAIL = "astronautjr.space@gmail.com";
+  // "English": [Arabic, Spanish]
+  const DICT = {
+    "Space Academy":["أكاديمية الفضاء","Academia Espacial"],
+    "stars":["نجوم","estrellas"],
+    "Space Trainee":["متدرب فضاء","Aprendiz espacial"],
+    "Missions":["المهام","Misiones"],
+    "Planets":["الكواكب","Planetas"],
+    "My Cadet":["رائدي","Mi cadete"],
+    "Trophies":["الكؤوس","Trofeos"],
+    "Settings":["الإعدادات","Ajustes"],
+    "Contact us":["تواصل معنا","Contáctanos"],
+    "Stars you have earned":["النجوم التي ربحتها","Estrellas que has ganado"],
+    "Astro reads aloud":["أسترو يقرأ بصوت عالٍ","Astro lee en voz alta"],
+    "Sound effects":["المؤثرات الصوتية","Efectos de sonido"],
+    "Planet file":["ملف الكوكب","Ficha del planeta"],
+    "Explorer notes":["ملاحظات المستكشف","Notas del explorador"],
+    "Previous":["السابق","Anterior"],"Next":["التالي","Siguiente"],
+    "Read to me":["اقرأ لي","Léeme"],
+    "Cadet registration":["تسجيل الرائد","Registro de cadete"],
+    "Welcome to the Academy":["أهلاً بك في الأكاديمية","Bienvenido a la Academia"],
+    "Your cadet name":["اسم الرائد الخاص بك","Tu nombre de cadete"],
+    "Pick your first suit colour":["اختر لون بدلتك الأولى","Elige el color de tu primer traje"],
+    "Everything you earn — stars, missions, outfits — is saved on this device.":["كل ما تربحه — النجوم والمهام والأزياء — يُحفظ على هذا الجهاز.","Todo lo que ganes — estrellas, misiones, trajes — se guarda en este dispositivo."],
+    "Start training":["ابدأ التدريب","Empezar entrenamiento"],
+    "Cadet console":["لوحة الرائد","Consola del cadete"],
+    "Little beeps and rewards":["أصوات صغيرة ومكافآت","Pitidos y recompensas"],
+    "Speaks every lesson card and his messages":["يقرأ كل بطاقة درس ورسائله","Lee cada tarjeta de lección y sus mensajes"],
+    "Calm mode":["الوضع الهادئ","Modo tranquilo"],
+    "Stops floating and zoom animations":["يوقف حركات الطفو والتكبير","Detiene las animaciones de flotar y zoom"],
+    "Cadet name":["اسم الرائد","Nombre del cadete"],"Save name":["حفظ الاسم","Guardar nombre"],
+    "Signed in as":["مسجّل الدخول باسم","Sesión iniciada como"],"Guest":["ضيف","Invitado"],
+    "Sign out":["تسجيل الخروج","Cerrar sesión"],
+    "Reset all progress":["إعادة ضبط كل التقدم","Reiniciar todo el progreso"],
+    "Astro-buddy · online":["صديق الفضاء · متصل","Compañero espacial · en línea"],
+    "Ask Astro anything about space…":["اسأل أسترو أي شيء عن الفضاء…","Pregunta a Astro lo que quieras del espacio…"],
+    "What is an orbit?":["ما هو المدار؟","¿Qué es una órbita?"],"Hint":["تلميح","Pista"],
+    "Tell me a joke":["احكِ لي نكتة","Cuéntame un chiste"],"What can you do?":["ماذا تستطيع أن تفعل؟","¿Qué puedes hacer?"],
+    "Sign in":["تسجيل الدخول","Iniciar sesión"],"Create account":["إنشاء حساب","Crear cuenta"],
+    "Welcome back, cadet!":["أهلاً بعودتك أيها الرائد!","¡Bienvenido de nuevo, cadete!"],
+    "Sign in to pick up your training where you left off.":["سجّل الدخول لتكمل تدريبك من حيث توقفت.","Inicia sesión para seguir tu entrenamiento donde lo dejaste."],
+    "Join the Academy!":["انضم إلى الأكاديمية!","¡Únete a la Academia!"],
+    "Create your cadet ID to save your stars, outfits and missions.":["أنشئ هويتك لتحفظ نجومك وأزياءك ومهامك.","Crea tu identificación para guardar tus estrellas, trajes y misiones."],
+    "Username or email":["اسم المستخدم أو البريد","Usuario o correo"],
+    "Email (optional)":["البريد الإلكتروني (اختياري)","Correo (opcional)"],
+    "Secret code":["الرمز السري","Código secreto"],"Your secret code":["رمزك السري","Tu código secreto"],
+    "Repeat secret code":["أعد الرمز السري","Repite el código secreto"],"Type it once more":["اكتبه مرة أخرى","Escríbelo otra vez"],
+    "Keep me signed in on this device":["أبقني مسجّلاً على هذا الجهاز","Mantener sesión en este dispositivo"],
+    "or":["أو","o"],"Play as guest":["العب كضيف","Jugar como invitado"],
+    "Accounts are saved on this device only, so ask a grown-up to help you remember your secret code.":["الحسابات تُحفظ على هذا الجهاز فقط، فاطلب من شخص بالغ مساعدتك في تذكّر رمزك السري.","Las cuentas se guardan solo en este dispositivo; pide a un adulto que te ayude a recordar tu código secreto."],
+    "Training path":["مسار التدريب","Ruta de entrenamiento"],"Mission quiz":["اختبار المهمة","Cuestionario de la misión"],
+    "Start the quiz":["ابدأ الاختبار","Empezar el cuestionario"],"Hands-on":["تطبيق عملي","Práctica"],
+    "Activity complete":["اكتمل النشاط","Actividad completada"],"Back to path":["العودة للمسار","Volver a la ruta"],
+    "Score":["النتيجة","Puntuación"],"Correct":["صحيح","Correcto"],"Planet":["الكوكب","Planeta"],
+    "Diameter":["القطر","Diámetro"],"Distance":["المسافة","Distancia"],"Moons":["الأقمار","Lunas"],"Year":["السنة","Año"],
+    "Our star":["نجمنا","Nuestra estrella"],"The Sun":["الشمس","El Sol"],
+    "Wardrobe":["الخزانة","Armario"],"Cadet wardrobe":["خزانة الرائد","Armario del cadete"],
+    "Equipped":["مُرتدى","Equipado"],"Wear it":["ارتدِه","Ponértelo"],"Starter kit":["الطقم الأول","Kit inicial"],
+    "Spend stars":["أنفق النجوم","Gastar estrellas"],"Stars now":["النجوم الآن","Estrellas ahora"],
+    "Stars to spend":["نجوم للإنفاق","Estrellas para gastar"],"Stars earned all-time":["كل النجوم المربوحة","Estrellas ganadas en total"],
+    "Current rank":["الرتبة الحالية","Rango actual"],"Missions done":["المهام المنجزة","Misiones completadas"],
+    "Worlds logged":["العوالم المسجّلة","Mundos registrados"],"Mission record":["سجل المهام","Registro de misiones"],
+    "Trophy cabinet":["خزانة الكؤوس","Vitrina de trofeos"],"All trophies":["كل الكؤوس","Todos los trofeos"],
+    "Explore planets":["استكشف الكواكب","Explorar planetas"],"Planet explorer":["مستكشف الكواكب","Explorador de planetas"],
+    "Take the tour":["ابدأ الجولة","Hacer el recorrido"],"Replay":["إعادة","Repetir"],"See trophies":["شاهد الكؤوس","Ver trofeos"],
+    "Need a hint?":["تحتاج تلميحاً؟","¿Necesitas una pista?"],"Ask Astro for a tip":["اطلب نصيحة من أسترو","Pide un consejo a Astro"],
+    "Back to missions":["العودة إلى المهام","Volver a las misiones"],"Next mission":["المهمة التالية","Siguiente misión"],
+    "Open the planet explorer":["افتح مستكشف الكواكب","Abrir el explorador de planetas"],
+    "Start with Earth":["ابدأ بالأرض","Empezar por la Tierra"],"Log more planets":["سجّل المزيد من الكواكب","Registrar más planetas"],
+    "Read the cards again":["اقرأ البطاقات مرة أخرى","Leer las tarjetas otra vez"],"Back":["رجوع","Atrás"],"Activity":["النشاط","Actividad"],
+    "Astro says:":["أسترو يقول:","Astro dice:"],"Astro's note:":["ملاحظة أسترو:","Nota de Astro:"],
+    "Mercury":["عطارد","Mercurio"],"Venus":["الزهرة","Venus"],"Earth":["الأرض","Tierra"],"Mars":["المريخ","Marte"],
+    "Jupiter":["المشتري","Júpiter"],"Saturn":["زحل","Saturno"],"Uranus":["أورانوس","Urano"],"Neptune":["نبتون","Neptuno"],
+    "Early Stargazers":["أوائل مراقبي النجوم","Primeros observadores de estrellas"],
+    "Rocket Pioneers":["رواد الصواريخ","Pioneros de los cohetes"],"Spacecraft Pilot":["طيار المركبة الفضائية","Piloto de nave espacial"],
+    "Living in Orbit":["العيش في المدار","Vivir en órbita"],"Space Navigation & Orbits":["الملاحة الفضائية والمدارات","Navegación espacial y órbitas"],
+    "Mission Control & Teamwork":["مركز التحكم والعمل الجماعي","Control de misión y trabajo en equipo"],
+    "The Moon Landing":["الهبوط على القمر","El alunizaje"],"Space Weather & Solar Storms":["طقس الفضاء والعواصف الشمسية","Clima espacial y tormentas solares"],
+    "Spacewalks & EVA":["السير في الفضاء","Paseos espaciales"],"Rocket Engineering":["هندسة الصواريخ","Ingeniería de cohetes"],
+    "Satellites & GPS":["الأقمار الصناعية وGPS","Satélites y GPS"],"Living in Zero Gravity":["العيش في انعدام الجاذبية","Vivir sin gravedad"],
+    "Deep Space & Telescopes":["الفضاء العميق والتلسكوبات","Espacio profundo y telescopios"],
+    "Mars Colonization":["استيطان المريخ","Colonización de Marte"],"Becoming an Astronaut":["كيف تصبح رائد فضاء","Cómo ser astronauta"],
+    "Questions, ideas or a problem? We would love to hear from you.":["أسئلة أو أفكار أو مشكلة؟ يسعدنا أن نسمع منك.","¿Preguntas, ideas o un problema? Nos encantará saber de ti."],
+    "Email":["البريد الإلكتروني","Correo"],"Phone":["الهاتف","Teléfono"],
+    "Send a complaint":["إرسال شكوى","Enviar una queja"],"Your name":["اسمك","Tu nombre"],"Your email":["بريدك الإلكتروني","Tu correo"],
+    "Describe the problem or complaint":["اشرح المشكلة أو الشكوى","Describe el problema o la queja"],
+    "Send complaint":["إرسال الشكوى","Enviar queja"],
+    "All rights reserved.":["جميع الحقوق محفوظة.","Todos los derechos reservados."]
+  };
+  DICT["This opens your email app with a ready message to "+EMAIL+"."]=["سيفتح هذا تطبيق البريد برسالة جاهزة إلى "+EMAIL+".","Esto abre tu app de correo con un mensaje listo para "+EMAIL+"."];
+
+  const IDX = { en:-1, ar:0, es:1 };
+  const SKIP = { SCRIPT:1, STYLE:1, CANVAS:1, NOSCRIPT:1 };
+  const ATTRS = ["placeholder","title","aria-label"];
+  let lang = "en", busy = false, queued = false;
+  try { const v = localStorage.getItem("aj-lang"); if (IDX[v] !== undefined) lang = v; } catch (e) {}
+
+  function pick(s) {                       // translate a string, or return it unchanged
+    const e = DICT[s]; return e && e[IDX[lang]] ? e[IDX[lang]] : null;
+  }
+  function translate(src) {
+    if (lang === "en") return src;
+    const t = src.trim(); if (!t) return src;
+    const lead = src.match(/^\s*/)[0], tail = src.match(/\s*$/)[0];
+    let r = pick(t);
+    if (!r) {                              // ignore leading/trailing emoji, arrows and symbols
+      const m = t.match(/^([^A-Za-z]*)([A-Za-z].*?)([^A-Za-z0-9.?!…'’):]*)$/);
+      if (m) { const c = pick(m[2]); if (c) r = m[1] + c + m[3]; }
+    }
+    return r ? lead + r + tail : src;
+  }
+  function doText(n) {
+    const known = n.__out !== undefined && n.data === n.__out;
+    const src = known ? n.__src : n.data;
+    const out = translate(src);
+    n.__src = src; n.__out = out;
+    if (n.data !== out) n.data = out;
+  }
+  function doAttrs(el) {
+    el.__a = el.__a || {};
+    for (const a of ATTRS) {
+      if (!el.hasAttribute(a)) continue;
+      const cur = el.getAttribute(a), rec = el.__a[a];
+      const src = rec && rec.out === cur ? rec.src : cur;
+      let out = lang === "en" ? src : (pick(src.trim()) || src);
+      el.__a[a] = { src, out };
+      if (cur !== out) el.setAttribute(a, out);
+    }
+  }
+  function walk(root) {
+    if (root.nodeType === 3) { if (!SKIP[root.parentNode && root.parentNode.nodeName]) doText(root); return; }
+    if (root.nodeType !== 1 || SKIP[root.nodeName]) return;
+    doAttrs(root);
+    for (let c = root.firstChild; c; c = c.nextSibling) walk(c);
+  }
+  function run(roots) { busy = true; try { roots.forEach(walk); } finally { obs.takeRecords(); busy = false; } }
+
+  const pending = new Set();
+  const obs = new MutationObserver(recs => {
+    if (busy) return;
+    for (const r of recs) pending.add(r.type === "childList" ? r.target : r.target);
+    if (queued) return; queued = true;
+    requestAnimationFrame(() => { queued = false; const l = [...pending]; pending.clear(); run(l); });
+  });
+
+  function setLang(l) {
+    lang = l;
+    try { localStorage.setItem("aj-lang", l); } catch (e) {}
+    document.documentElement.lang = l;
+    document.documentElement.dir = l === "ar" ? "rtl" : "ltr";
+    document.querySelectorAll(".langs button").forEach(b => {
+      const on = b.dataset.lang === l; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on);
+    });
+    run([document.body]);
+  }
+
+  document.addEventListener("click", e => {
+    const b = e.target.closest && e.target.closest(".langs button[data-lang]");
+    if (b) setLang(b.dataset.lang);
+  });
+
+  // complaint form -> opens the email app addressed to the complaints inbox
+  const form = document.getElementById("complaintForm");
+  if (form) form.addEventListener("submit", e => {
+    e.preventDefault();
+    const n = document.getElementById("cpName").value.trim();
+    const f = document.getElementById("cpEmail").value.trim();
+    const t = document.getElementById("cpText").value.trim();
+    const subj = { en:"Complaint from ", ar:"شكوى من ", es:"Queja de " }[lang] + n;
+    location.href = "mailto:" + EMAIL + "?subject=" + encodeURIComponent(subj) +
+      "&body=" + encodeURIComponent(t + "\n\n" + n + "\n" + f);
+  });
+
+  const y = document.getElementById("copyYear"); if (y) y.textContent = new Date().getFullYear();
+  obs.observe(document.body, { childList:true, subtree:true, characterData:true, attributes:true, attributeFilter:ATTRS });
+  setLang(lang);
+})();
