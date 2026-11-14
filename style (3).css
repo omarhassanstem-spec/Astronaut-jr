@@ -1033,3 +1033,22 @@ html[dir="rtl"] .cinema-player-meta{align-items:flex-start}
 .cinema-age{position:absolute;right:10px;top:10px;border:1px solid rgba(255,255,255,.3);border-radius:999px;background:rgba(3,10,25,.8);color:#fff;padding:4px 9px;font-size:.72rem;font-weight:800}
 html[dir="rtl"] .cinema-age{right:auto;left:10px}
 @media(max-width:560px){.cinema-audience{max-width:none}.cinema-thumb-icon{font-size:4rem}}
+
+/* Astro Jr enhancements: simulations, About Us and responsive layouts */
+.about-card{max-width:900px;margin:0 auto;padding:clamp(20px,4vw,34px);text-align:center}
+.about-orbit{font-size:3rem;margin:4px auto 16px;filter:drop-shadow(0 0 18px rgba(79,227,255,.35))}
+.about-card h3{font-size:1.35rem;margin-bottom:14px}
+.about-card p{color:var(--ink-dim);line-height:1.75;margin:12px auto;max-width:760px}
+.about-team{display:flex;gap:10px;justify-content:center;flex-wrap:wrap;margin-top:22px}
+.about-team span{padding:10px 14px;border:1px solid var(--line);background:rgba(79,227,255,.07);border-radius:999px;font-weight:700}
+.simulation-card{margin-top:16px}
+.simulation-card h3{font-size:1.2rem;margin:10px 0}
+.simulation-card>p{color:var(--ink-dim);line-height:1.6}
+.sim-slider{width:100%;accent-color:var(--cyan);margin:12px 0 4px}
+.sim-stage{height:250px;position:relative;display:grid;place-items:center;overflow:hidden;border-radius:16px;margin:16px 0;background:radial-gradient(circle at center,rgba(79,227,255,.12),rgba(6,10,24,.9) 70%);border:1px solid var(--line)}
+.sim-planet{font-size:3.2rem;z-index:2;filter:drop-shadow(0 0 18px rgba(79,227,255,.35))}
+.sim-orbit{position:absolute;width:157px;height:157px;border:1px dashed rgba(79,227,255,.6);border-radius:50%;animation:simOrbit 5s linear infinite;transition:width .25s,height .25s}
+.sim-satellite{position:absolute;top:-17px;left:50%;transform:translateX(-50%);font-size:1.5rem}
+@keyframes simOrbit{to{transform:rotate(360deg)}}
+.sim-explanation{padding:12px 14px;border-radius:12px;background:rgba(95,240,182,.08);border:1px solid rgba(95,240,182,.25);color:var(--ink)!important}
+.site-footer .copyright{padding-bottom:8px}

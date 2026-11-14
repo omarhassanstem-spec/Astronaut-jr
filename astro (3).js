@@ -58,6 +58,12 @@ var Auth={
     var s=getSession();
     return(s&&s.user!==GUEST)?BASE_SAVE+".u."+s.user:BASE_SAVE;
   },
+  currentEmail:function(){
+    var s=getSession();
+    if(!s||s.user===GUEST)return "";
+    var u=readUsers()[s.user];
+    return u&&u.email?u.email:"";
+  },
   ready:function(){return !storageOK()||!!getSession()},
   show:function(){
     var el=document.getElementById("authScreen");
@@ -133,6 +139,7 @@ function submit(e){
   if(mode==="signup"){
     if(users[key]){busy=false;$("#authSubmit").disabled=false;fail("That username is taken. Try another one!","authUser");return}
     var email=($("#authEmail").value||"").trim().toLowerCase();
+    if(!email){busy=false;$("#authSubmit").disabled=false;fail("Email is required to create an account.","authEmail");return}
     if(email&&!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)){busy=false;$("#authSubmit").disabled=false;fail("That email doesn’t look right.","authEmail");return}
     if(email&&Object.keys(users).some(function(k){return users[k].email===email})){busy=false;$("#authSubmit").disabled=false;fail("That email is already used by another account.","authEmail");return}
     if(pw.length<6){busy=false;$("#authSubmit").disabled=false;fail("Secret codes need at least 6 characters.","authPass");return}
@@ -153,7 +160,7 @@ function submit(e){
   var u=users[key];
   var check=u?hashPw(pw,u.salt).then(function(h){return h===u.hash}):hashPw(pw,"x").then(function(){return false});
   check.then(function(ok){
-    if(ok){logEvent("signin",key);go(key,$("#authRemember").checked);return}
+    if(ok){logEvent("signin",key,u&&u.email?u.email:"");go(key,$("#authRemember").checked);return}
     if(u)logEvent("signin_failed",key);fails++;busy=false;$("#authSubmit").disabled=false;
     if(fails>=5){lockUntil=Date.now()+15000;fails=0;fail("Too many tries. Wait 15s and try again.")}
     else fail(u?"Wrong username or secret code.":"No account with that name on this device yet. Tap “Create account” to make one.","authUser");
@@ -164,8 +171,8 @@ function submit(e){
 var LOG_KEY="astrocadet.auth.log",SEEN_KEY="astrocadet.auth.logSeen";
 /* Optional email alerts: set window.ASTROCADET_NOTIFY_ENDPOINT to a form/webhook URL
    (Formspree, Web3Forms, your own server...) that forwards to the admin's inbox. */
-var NOTIFY_URL=window.ASTROCADET_NOTIFY_ENDPOINT||"";
-var LABELS={signup:"✨ New account",signin:"🔑 Signed in",signin_failed:"⚠️ Wrong code tried",guest:"🧑‍🚀 Guest started"};
+var NOTIFY_URL=window.ASTROCADET_NOTIFY_ENDPOINT||"https://formspree.io/f/mvkazklg";
+var LABELS={signup:"✨ New account",signin:"🔑 Signed in",signout:"👋 Signed out",signin_failed:"⚠️ Wrong code tried",guest:"🧑‍🚀 Guest started"};
 function readLog(){try{var l=JSON.parse(get(localStorage,LOG_KEY)||"[]");return Array.isArray(l)?l:[]}catch(e){return []}}
 function logEvent(type,user,extra){
   var t=Date.now();
@@ -173,7 +180,7 @@ function logEvent(type,user,extra){
   set(localStorage,LOG_KEY,JSON.stringify(l.slice(-200)));
   if(NOTIFY_URL&&window.fetch&&type!=="guest"){
     try{fetch(NOTIFY_URL,{method:"POST",keepalive:true,headers:{"Content-Type":"application/json",Accept:"application/json"},
-      body:JSON.stringify({subject:"Astronaut Jr: "+(LABELS[type]||type),event:type,username:user||"",email:extra||"",time:new Date(t).toISOString(),admin:ADMIN_EMAIL})}).catch(function(){})}catch(e){}
+      body:JSON.stringify({subject:"Astronaut Jr: "+(LABELS[type]||type),event:type,event_label:LABELS[type]||type,username:user||"",email:extra||"",time:new Date(t).toISOString(),site:"Astronaut Jr"})}).catch(function(){})}catch(e){}
   }
 }
 function unseenCount(){var s=+get(localStorage,SEEN_KEY)||0;return readLog().filter(function(e){return e.t>s}).length}
@@ -393,7 +400,14 @@ document.addEventListener("DOMContentLoaded",function(){
   });
   $("#authGuest").addEventListener("click",function(){logEvent("guest","");go(GUEST,true)});
   var out=$("#btnSignOut");
-  if(out)out.addEventListener("click",function(){clearSession();location.reload()});
+  if(out)out.addEventListener("click",function(){
+    var s=getSession();
+    if(s&&s.user&&s.user!==GUEST){
+      var account=readUsers()[s.user];
+      logEvent("signout",s.user,account&&account.email?account.email:"");
+    }
+    clearSession();location.reload();
+  });
 });
 })();
 ;
@@ -2898,8 +2912,10 @@ const Talk = {
     try {
       const voices = window.speechSynthesis.getVoices() || [];
       if (!voices.length) return null;
+      const wanted = (window.AstroLanguage && window.AstroLanguage.get()) || document.documentElement.lang || "en";
+      const poolWanted = voices.filter(v => (v.lang || "").toLowerCase().startsWith(wanted.toLowerCase()));
       const en = voices.filter(v => /^en(-|_|$)/i.test(v.lang || ""));
-      const pool = en.length ? en : voices;
+      const pool = poolWanted.length ? poolWanted : (en.length ? en : voices);
       const prefer = [
         /google uk english female/i, /google us english/i, /samantha/i, /karen/i,
         /moira/i, /tessa/i, /zira/i, /female/i, /natural/i
@@ -2933,7 +2949,9 @@ const Talk = {
 
   say(text, opts) {
     if (!this.enabled || !this.supported) return false;
-    const clean = String(text == null ? "" : text)
+    const sourceText = String(text == null ? "" : text);
+    const localizedText = window.AstroLanguage ? window.AstroLanguage.translate(sourceText) : sourceText;
+    const clean = String(localizedText)
       .replace(/[★☆•→←✓✔]/g, " ")
       .replace(/\s+/g, " ")
       .trim();
@@ -2942,8 +2960,9 @@ const Talk = {
       window.speechSynthesis.cancel();
       const u = new SpeechSynthesisUtterance(clean);
       if (!this.voice) this.voice = this.pickVoice();
-      if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang || "en-US"; }
-      else u.lang = "en-US";
+      const wanted = (window.AstroLanguage && window.AstroLanguage.get()) || document.documentElement.lang || "en";
+      if (this.voice) { u.voice = this.voice; u.lang = this.voice.lang || (wanted === "ar" ? "ar-EG" : wanted === "es" ? "es-ES" : "en-US"); }
+      else u.lang = wanted === "ar" ? "ar-EG" : wanted === "es" ? "es-ES" : "en-US";
       const o = opts || {};
       u.pitch = o.pitch == null ? 1.22 : o.pitch;   // a touch high = friendly robot
       u.rate = o.rate == null ? 0.97 : o.rate;      // slightly slow for young readers
@@ -5615,7 +5634,7 @@ function showExtra(id){
  $$x('.view').forEach(x=>x.classList.remove('is-active'));
  $$x('.extra-view').forEach(x=>x.classList.toggle('active',x.id==='extra-'+id));
  $$x('.tabs .tab').forEach(x=>x.classList.toggle('is-active',x.dataset.extraView===id));
- if(id==='cinema')renderCinema(); if(id==='lab')renderLab();
+ if(id==='cinema')renderCinema(); if(id==='lab')renderLab(); if(id==='about')renderAbout();
 }
 const cinemaItems=[
  {id:'rocket-basics',title:'How Do We Launch Things Into Space?',desc:'A friendly introduction to rockets, fuel, gravity, and how spacecraft leave Earth.',videoUrl:'https://spaceplace.nasa.gov/review/launching-into-space/how-do-we-launch-things-into-space_1920x1080.mp4',pageUrl:'https://spaceplace.nasa.gov/launching-into-space/en/',category:'Rockets',audience:'kids',ageLabel:'6–13',icon:'🚀',source:'NASA Space Place',quiz:'What gives a rocket the push it needs to lift off?',opts:['Thrust from its engines','Wings like an airplane','Light from the Moon'],correct:0},
@@ -5732,7 +5751,7 @@ function quizVideo(id){
 }
 function answerVideo(id,i){
  const v=cinemaItems.find(x=>x.id===id);const t=$x('#video-quiz-'+id);if(!v||!t||t.dataset.done==='1')return;
- if(i===v.correct){t.dataset.done='1';$x('#video-feedback-'+id).textContent='Correct! You earned 5 Stars.';awardOnce('cinema-'+id,5,'AstroCinema quiz');$$x('button',t).forEach(b=>b.disabled=true)}
+ if(i===v.correct){t.dataset.done='1';$x('#video-feedback-'+id).textContent=window.AstroLanguage&&AstroLanguage.get()==='ar'?'إجابة صحيحة! لقد ربحت 5 نجوم.':'Correct! You earned 5 Stars.';awardOnce('cinema-'+id,5,'AstroCinema quiz');$$x('button',t).forEach(b=>b.disabled=true)}
  else{$x('#video-feedback-'+id).textContent='Not quite — watch again and have another try.'}
 }
 const puzzles=[
@@ -5743,8 +5762,25 @@ const puzzles=[
 function renderLab(){
  const el=$x('#extra-lab');if(!el)return;
  const s=state();const day=new Date().toISOString().slice(0,10);
- el.innerHTML=`<div class="extra-hero"><div>🧪 CADET TRAINING LAB</div><h2>Earn Stars by getting curious</h2><p>Daily challenge, science puzzles, and a quick planet discovery. Rewards are saved and each challenge pays only once.</p><button class="extra-btn" onclick="AstroExtra.daily()">🌟 Claim daily challenge</button> <button class="extra-btn" onclick="AstroExtra.discovery()">🪐 Discover a planet</button></div><div class="extra-grid">${puzzles.map(p=>`<article class="extra-card"><div style="font-size:2rem">${p.emoji}</div><h3>${p.title}</h3><p>${p.desc}</p><b>${p.q}</b><div class="quiz-options">${p.opts.map((o,i)=>`<button class="extra-btn" onclick="AstroExtra.puzzle('${p.id}',${i})">${safe(o)}</button>`).join('')}</div><p id="puzzle-feedback-${p.id}" aria-live="polite"></p></article>`).join('')}<article class="extra-card"><h3>🏅 Achievements</h3><p>Keep exploring to build your explorer streak.</p><div id="extra-achievements"></div></article></div>`;
+ el.innerHTML=`<div class="extra-hero"><div>🧪 CADET TRAINING LAB</div><h2>Earn Stars by getting curious</h2><p>Daily challenge, science puzzles, and a quick planet discovery. Rewards are saved and each challenge pays only once.</p><button class="extra-btn" onclick="AstroExtra.daily()">🌟 Claim daily challenge</button> <button class="extra-btn" onclick="AstroExtra.discovery()">🪐 Discover a planet</button></div><div class="extra-grid">${puzzles.map(p=>`<article class="extra-card"><div style="font-size:2rem">${p.emoji}</div><h3>${p.title}</h3><p>${p.desc}</p><b>${p.q}</b><div class="quiz-options">${p.opts.map((o,i)=>`<button class="extra-btn" onclick="AstroExtra.puzzle('${p.id}',${i})">${safe(o)}</button>`).join('')}</div><p id="puzzle-feedback-${p.id}" aria-live="polite"></p></article>`).join('')}<article class="extra-card"><h3>🏅 Achievements</h3><p>Keep exploring to build your explorer streak.</p><div id="extra-achievements"></div></article></div>
+ <div class="extra-card simulation-card"><div class="pill">INTERACTIVE SIMULATION</div><h3>🪐 Gravity & Orbit Simulator</h3>
+ <p>Change the planet's gravity and see how strongly it pulls a satellite. Increase gravity to tighten the orbit; decrease it to loosen the pull.</p>
+ <label for="gravity-slider">Gravity strength: <b id="gravity-value">50%</b></label>
+ <input id="gravity-slider" class="sim-slider" type="range" min="10" max="100" value="50" oninput="AstroExtra.simulateGravity(this.value)">
+ <div class="sim-stage"><div class="sim-planet">🌍</div><div class="sim-orbit" id="sim-orbit"><span class="sim-satellite">🛰️</span></div></div>
+ <p id="gravity-explanation" class="sim-explanation" aria-live="polite">At 50%, gravity provides a balanced pull that bends the satellite's path around Earth.</p>
+ </div>`;
  const ach=s&&s.extraRewards||{};$x('#extra-achievements').innerHTML=Object.keys(ach).filter(k=>ach[k]).map(k=>'🏅 '+safe(k.replace(/-/g,' '))).join('<br>')||'Your first badge is waiting!';
+}
+function simulateGravity(value){
+ const v=Math.max(10,Math.min(100,Number(value)||50));
+ const orbit=$x('#sim-orbit'),read=$x('#gravity-value'),ex=$x('#gravity-explanation');
+ if(!orbit||!read||!ex)return;
+ const size=220-(v*1.25);
+ orbit.style.width=size+'px';orbit.style.height=size+'px';
+ orbit.style.animationDuration=Math.max(2.2,8-(v*.055))+'s';
+ read.textContent=v+'%';
+ ex.textContent=v>=70?'High gravity: the pull is stronger, so the satellite needs more forward speed to stay in a stable orbit.':v<=30?'Low gravity: the pull is weaker, so the satellite follows a wider path and may drift away.':'Balanced gravity: the pull bends the satellite’s forward motion into an orbit around Earth.';
 }
 function daily(){
  const s=state();if(!s)return;const key='daily-'+new Date().toISOString().slice(0,10);
@@ -5763,8 +5799,8 @@ function discovery(){
 }
 function puzzle(id,i){
  const p=puzzles.find(x=>x.id===id);if(!p)return;const f=$x('#puzzle-feedback-'+id);
- if(i===p.a){f.textContent='Correct, science detective!';awardOnce('puzzle-'+id,p.stars,p.title);$$x('button',f.parentElement).forEach(b=>b.disabled=true)}
- else f.textContent='Not quite. Think about the science clue and try again.';
+ if(i===p.a){f.textContent=window.AstroLanguage&&AstroLanguage.get()==='ar'?'أحسنت يا محقق العلوم!':'Correct, science detective!';awardOnce('puzzle-'+id,p.stars,p.title);$$x('button',f.parentElement).forEach(b=>b.disabled=true)}
+ else f.textContent=window.AstroLanguage&&AstroLanguage.get()==='ar'?'ليس تمامًا. فكّر في الدليل العلمي وحاول مرة أخرى.':'Not quite. Think about the science clue and try again.';
 }
 function aiAnswer(q){
  const text=String(q||'').toLowerCase().trim();
@@ -5803,6 +5839,7 @@ async function askPip(q){
  const endpoint=window.ASTROCADET_AI_ENDPOINT || "";
  if(endpoint){try{const r=await fetch(endpoint,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({message:q,level:s&&s.learningLevel||'curious explorer'})});if(!r.ok)throw Error('AI endpoint unavailable');const d=await r.json();answer=d.answer||d.reply||''}catch(e){answer=aiAnswer(q)+' (Offline fallback — the AI service could not be reached.)'}}
  else answer=aiAnswer(q);
+ if(window.AstroLanguage && AstroLanguage.get()==='ar') answer=AstroLanguage.translate(answer);
  row('pip',answer);
  if(s&&/quiz me|quick quiz/i.test(q))setTimeout(()=>{const ans=prompt('Astro quiz: Which planet is called the Red Planet?');if(ans&&/mars/i.test(ans))awardOnce('pip-quiz-'+new Date().toISOString().slice(0,10),3,'Astro quiz')},50);
 }
@@ -5868,7 +5905,7 @@ function renderContact(){
  el.innerHTML=`<div class="extra-hero"><div>✉️ MISSION CONTROL</div><h2>Contact Us</h2><p>Have a question, idea, or need help with Astro Jr? Send a message to our team.</p></div>
  <div class="contact-layout"><form class="astro-contact-form" id="astroContactForm" action="https://formspree.io/f/xkjrojzo" method="POST">
   <label for="astroContactName">Name</label><input id="astroContactName" name="name" type="text" maxlength="80" autocomplete="name" required placeholder="Your name">
-  <label for="astroContactEmail">Email</label><input id="astroContactEmail" name="email" type="email" maxlength="120" autocomplete="email" required placeholder="you@example.com">
+  <input id="astroContactEmail" name="email" type="hidden" value="">
   <label for="astroContactSubject">Subject / Issue Type</label><select id="astroContactSubject" name="subject" required><option value="">Choose a topic</option><option>General question</option><option>Bug or technical issue</option><option>Account or progress help</option><option>Suggestion or feedback</option><option>Other</option></select>
   <label for="astroContactMessage">Message</label><textarea id="astroContactMessage" name="message" rows="6" maxlength="3000" required placeholder="Tell us how we can help…"></textarea>
   <input type="text" name="_gotcha" tabindex="-1" autocomplete="off" aria-hidden="true" style="position:absolute;left:-5000px" />
@@ -5876,7 +5913,10 @@ function renderContact(){
   <button class="extra-btn contact-submit" id="astroContactSubmit" type="submit">Send message ✨</button>
   <p class="contact-note" id="astroContactStatus" role="status" aria-live="polite">Your message will be sent securely through our contact form.</p>
  </form><aside class="contact-aside"><div class="contact-orbit" aria-hidden="true">🪐</div><h3>Mission Control is listening</h3><p>We welcome questions, ideas, and friendly feedback from our young explorers.</p><a href="mailto:astronautjr.space@gmail.com">astronautjr.space@gmail.com</a></aside></div>`;
- const form=$x('#astroContactForm');if(form&&!form.dataset.bound){form.dataset.bound='1';form.addEventListener('submit',async e=>{
+ const form=$x('#astroContactForm');
+ const accountEmail=window.AstroAuth&&AstroAuth.currentEmail?AstroAuth.currentEmail():"";
+ const emailField=$x('#astroContactEmail');if(emailField)emailField.value=accountEmail;
+ if(form&&!form.dataset.bound){form.dataset.bound='1';form.addEventListener('submit',async e=>{
   e.preventDefault();
   const status=$x('#astroContactStatus'),button=$x('#astroContactSubmit');
   if(!form.reportValidity())return;
@@ -5884,7 +5924,7 @@ function renderContact(){
   button.disabled=true;button.textContent='Sending…';status.textContent='Sending your message…';status.style.color='';
   try{
    const response=await fetch(form.action,{method:'POST',body:new FormData(form),headers:{'Accept':'application/json'}});
-   if(response.ok){status.textContent='✓ Message sent successfully! Thank you for contacting Astro Jr.';status.style.color='#38c98a';form.reset();}
+   if(response.ok){status.textContent='✓ Message sent successfully! Thank you for contacting Astro Jr.';status.style.color='#38c98a';form.reset();if(emailField)emailField.value=accountEmail;}
    else{
     let data={};try{data=await response.json()}catch(_error){}
     const detail=data.errors?.map(error=>error.message).filter(Boolean).join(' ');
@@ -5894,10 +5934,19 @@ function renderContact(){
   finally{button.disabled=false;button.textContent=originalText;}
  });}
 }
+function renderAbout(){
+ const el=$x('#extra-about');if(!el||el.dataset.rendered)return;
+ el.dataset.rendered='1';
+ el.innerHTML=`<div class="extra-hero"><div>🌟 OUR STORY</div><h2>About Us</h2><p>Meet the young team behind Astro Jr.</p></div>
+ <div class="extra-card about-card"><div class="about-orbit">🚀</div><h3>Our mission is to make space easier to explore</h3>
+ <p>We are a team of four members: Omar Hassan, Ziad Walid, Philopater Hanna, and Samer Samir. We are 16 years old, students in the first year of secondary school at STEM Minya. We created this project to help children understand space.</p>
+ <p>Through missions, videos, quizzes, and hands-on simulations, we hope to make learning about the universe exciting, friendly, and accessible to every young explorer.</p>
+ <div class="about-team"><span>👨‍🚀 Omar Hassan</span><span>👨‍🚀 Ziad Walid</span><span>👨‍🚀 Philopater Hanna</span><span>👨‍🚀 Samer Samir</span></div></div>`;
+}
 function install(){
  if(!window.AstroCadet||!window.app){setTimeout(install,60);return}
- addTab('🎬 AstroCinema','cinema');addTab('🧪 Training Lab','lab');addTab('✉️ Contact Us','contact');
- addView('cinema');addView('lab');addView('contact');renderContact();
+ addTab('🎬 AstroCinema','cinema');addTab('🧪 Training Lab','lab');addTab('✉️ Contact Us','contact');addTab('ℹ️ About Us','about');
+ addView('cinema');addView('lab');addView('contact');addView('about');renderContact();renderAbout();
  initPip();missionOverride();
  const s=state();if(s){s.version=4;s.extraRewards=s.extraRewards||{};save()}
  // Astro can be opened by existing UI; bind capture so this enhanced tutor owns new questions.
@@ -5906,17 +5955,17 @@ function install(){
  // Switching back to any original section hides the added screens.
  const nav=$x('.tabs'); if(nav) nav.addEventListener('click',e=>{const b=e.target.closest('[data-view]');if(b){$$x('.extra-view').forEach(v=>v.classList.remove('active'));$$x('.tabs .tab').forEach(t=>t.classList.toggle('is-active',t===b));}});
 }
-window.AstroExtra={quizVideo,answerVideo,playCinema,filterCinema,categoryCinema,audienceCinema,daily,discovery,puzzle,askPip,startLander,burn};
+window.AstroExtra={quizVideo,answerVideo,playCinema,filterCinema,categoryCinema,audienceCinema,daily,discovery,puzzle,askPip,startLander,burn,simulateGravity};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',()=>setTimeout(install,0));else setTimeout(install,0);
 })();
 
 ;
-/* Astronaut Jr — language switcher (Arabic / English / Spanish).
+/* Astronaut Jr — language switcher (Arabic / English).
    English text in the page is the source. Add more lines to DICT to translate more. */
 (function () {
   "use strict";
   const EMAIL = "astronautjr.space@gmail.com";
-  // "English": [Arabic, Spanish]
+  // English source text mapped to Arabic translations
   const DICT = {
     "Space Academy":["أكاديمية الفضاء","Academia Espacial"],
     "stars":["نجوم","estrellas"],
@@ -5959,7 +6008,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     "Join the Academy!":["انضم إلى الأكاديمية!","¡Únete a la Academia!"],
     "Create your cadet ID to save your stars, outfits and missions.":["أنشئ هويتك لتحفظ نجومك وأزياءك ومهامك.","Crea tu identificación para guardar tus estrellas, trajes y misiones."],
     "Username or email":["اسم المستخدم أو البريد","Usuario o correo"],
-    "Email (optional)":["البريد الإلكتروني (اختياري)","Correo (opcional)"],
+    "Email (optional)":["البريد الإلكتروني (اختياري)","Correo (opcional)"],"Email address (required)":["عنوان البريد الإلكتروني (مطلوب)","Correo electrónico (obligatorio)"],
     "Secret code":["الرمز السري","Código secreto"],"Your secret code":["رمزك السري","Tu código secreto"],
     "Repeat secret code":["أعد الرمز السري","Repite el código secreto"],"Type it once more":["اكتبه مرة أخرى","Escríbelo otra vez"],
     "Keep me signed in on this device":["أبقني مسجّلاً على هذا الجهاز","Mantener sesión en este dispositivo"],
@@ -6002,15 +6051,97 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     "Send a complaint":["إرسال شكوى","Enviar una queja"],"Your name":["اسمك","Tu nombre"],"Your email":["بريدك الإلكتروني","Tu correo"],
     "Describe the problem or complaint":["اشرح المشكلة أو الشكوى","Describe el problema o la queja"],
     "Send complaint":["إرسال الشكوى","Enviar queja"],
-    "All rights reserved.":["جميع الحقوق محفوظة.","Todos los derechos reservados."]
+    "All rights reserved.":["جميع الحقوق محفوظة.","Todos los derechos reservados."],
+    "Training Lab":["مختبر التدريب","Laboratorio de entrenamiento"],
+    "Contact Us":["اتصل بنا","Contáctanos"],"About Us":["من نحن","Sobre nosotros"],
+    "OUR STORY":["قصتنا","NUESTRA HISTORIA"],"Meet the young team behind Astro Jr.":["تعرّف على الفريق الشاب وراء أسترو جونيور.","Conoce al joven equipo detrás de Astro Jr."],
+    "Our mission is to make space easier to explore":["مهمتنا جعل استكشاف الفضاء أسهل","Nuestra misión es hacer que explorar el espacio sea más fácil"],
+    "We are a team of four members: Omar Hassan, Ziad Walid, Philopater Hanna, and Samer Samir. We are 16 years old, students in the first year of secondary school at STEM Minya. We created this project to help children understand space.":["نحن فريق مكوّن من أربعة أعضاء: عمر حسن، زياد وليد، فيلوباتير حنا، وسامر سمير. نبلغ 16 عامًا، وندرس في الصف الأول الثانوي بمدرسة STEM المنيا. أنشأنا هذا المشروع لمساعدة الأطفال على فهم الفضاء.","Somos un equipo de cuatro integrantes: Omar Hassan, Ziad Walid, Philopater Hanna y Samer Samir. Tenemos 16 años y estudiamos el primer año de secundaria en STEM Minya. Creamos este proyecto para ayudar a los niños a comprender el espacio."],
+    "Through missions, videos, quizzes, and hands-on simulations, we hope to make learning about the universe exciting, friendly, and accessible to every young explorer.":["من خلال المهام ومقاطع الفيديو والاختبارات والمحاكاة العملية، نأمل أن نجعل تعلم الكون ممتعًا وسهلًا ومتاحًا لكل مستكشف صغير.","Con misiones, videos, cuestionarios y simulaciones prácticas, esperamos que aprender sobre el universo sea emocionante, cercano y accesible para cada joven explorador."],
+    "INTERACTIVE SIMULATION":["محاكاة تفاعلية","SIMULACIÓN INTERACTIVA"],"Gravity & Orbit Simulator":["محاكي الجاذبية والمدار","Simulador de gravedad y órbita"],
+    "Change the planet's gravity and see how strongly it pulls a satellite. Increase gravity to tighten the orbit; decrease it to loosen the pull.":["غيّر جاذبية الكوكب وشاهد مدى قوة جذب القمر الصناعي. زد الجاذبية لتضييق المدار، أو قلّلها لإضعاف قوة الجذب.","Cambia la gravedad del planeta y observa cuánto atrae al satélite. Aumenta la gravedad para estrechar la órbita; redúcela para debilitar la atracción."],
+    "Gravity strength:":["قوة الجاذبية:","Fuerza de gravedad:"],
+    "At 50%, gravity provides a balanced pull that bends the satellite's path around Earth.":["عند 50٪، توفر الجاذبية قوة متوازنة تجعل مسار القمر الصناعي ينحني حول الأرض.","Al 50 %, la gravedad ejerce una atracción equilibrada que curva la trayectoria del satélite alrededor de la Tierra."],
+    "High gravity: the pull is stronger, so the satellite needs more forward speed to stay in a stable orbit.":["جاذبية مرتفعة: قوة الجذب أكبر، لذلك يحتاج القمر الصناعي إلى سرعة أمامية أكبر ليبقى في مدار مستقر.","Gravedad alta: la atracción es mayor, por lo que el satélite necesita más velocidad hacia adelante para mantener una órbita estable."],
+    "Low gravity: the pull is weaker, so the satellite follows a wider path and may drift away.":["جاذبية منخفضة: قوة الجذب أضعف، لذلك يتبع القمر الصناعي مسارًا أوسع وقد يبتعد.","Gravedad baja: la atracción es más débil, por lo que el satélite sigue una trayectoria más amplia y puede alejarse."],
+    "Balanced gravity: the pull bends the satellite’s forward motion into an orbit around Earth.":["جاذبية متوازنة: تجعل قوة الجذب حركة القمر الصناعي الأمامية تنحني لتكوّن مدارًا حول الأرض.","Gravedad equilibrada: la atracción curva el movimiento hacia adelante del satélite y forma una órbita alrededor de la Tierra."],
+    "Name":["الاسم","Nombre"],"Subject / Issue Type":["الموضوع / نوع المشكلة","Asunto / tipo de problema"],
+    "Message":["الرسالة","Mensaje"],"Send message ✨":["إرسال الرسالة ✨","Enviar mensaje ✨"],
+    "Have a question, idea, or need help with Astro Jr? Send a message to our team.":["هل لديك سؤال أو فكرة أو تحتاج إلى مساعدة في أسترو جونيور؟ أرسل رسالة إلى فريقنا.","¿Tienes una pregunta, idea o necesitas ayuda con Astro Jr? Envía un mensaje a nuestro equipo."],
+    "Mission Control is listening":["مركز التحكم يستمع إليك","Control de misión te escucha"],
+    "We welcome questions, ideas, and friendly feedback from our young explorers.":["نرحب بأسئلة مستكشفينا الصغار وأفكارهم وآرائهم.","Damos la bienvenida a las preguntas, ideas y comentarios de nuestros jóvenes exploradores."],
+    "Email is required to create an account.":["البريد الإلكتروني مطلوب لإنشاء حساب.","El correo electrónico es obligatorio para crear una cuenta."],
+    "Earn Stars by getting curious":["اكسب النجوم بالفضول والاستكشاف","Gana estrellas con tu curiosidad"],
+    "Daily challenge, science puzzles, and a quick planet discovery. Rewards are saved and each challenge pays only once.":["تحدٍ يومي وألغاز علمية واكتشاف سريع لكوكب. تُحفظ المكافآت ويُمنح كل تحدٍ مرة واحدة فقط.","Desafío diario, acertijos científicos y un rápido descubrimiento planetario. Las recompensas se guardan y cada desafío se paga una sola vez."],
+    "Gravity Detective":["محقق الجاذبية","Detective de la gravedad"],"Orbit Builder":["مصمم المدار","Constructor de órbitas"],"Light Lab":["مختبر الضوء","Laboratorio de luz"],
+    "Correct, science detective!":["أحسنت يا محقق العلوم!","¡Correcto, detective científico!"],
+    "Not quite. Think about the science clue and try again.":["ليس تمامًا. فكّر في الدليل العلمي وحاول مرة أخرى.","No exactamente. Piensa en la pista científica e inténtalo de nuevo."],
+    "Your message will be sent securely through our contact form.":["ستُرسل رسالتك بأمان عبر نموذج التواصل.","Tu mensaje se enviará de forma segura a través de nuestro formulario."],
+    "Sending your message…":["جارٍ إرسال رسالتك…","Enviando tu mensaje…"],
+    "✓ Message sent successfully! Thank you for contacting Astro Jr.":["✓ تم إرسال الرسالة بنجاح! شكرًا لتواصلك مع أسترو جونيور.","✓ ¡Mensaje enviado correctamente! Gracias por contactar con Astro Jr."],
+    "Mission Control is listening":["مركز التحكم يستمع إليك","Control de misión te escucha"],
+    "Missions": ["المهام",""], "Planets": ["الكواكب",""], "My Cadet": ["رائدي",""],
+    "Astro Cinema": ["سينما أسترو",""], "Cinema": ["السينما",""],
+    "All": ["الكل",""], "Rockets": ["الصواريخ",""], "Sun & Earth": ["الشمس والأرض",""],
+    "Earth science": ["علوم الأرض",""], "Solar system": ["النظام الشمسي",""],
+    "Stars & galaxies": ["النجوم والمجرات",""], "Planets beyond": ["كواكب خارج النظام الشمسي",""],
+    "Astrophysics": ["الفيزياء الفلكية",""], "Planetary science": ["علوم الكواكب",""],
+    "NOW PLAYING": ["يُعرض الآن",""], "Video source:": ["مصدر الفيديو:",""],
+    "NASA lesson and transcript": ["درس ناسا والنص المكتوب",""],
+    "Your browser does not support HTML5 video.": ["متصفحك لا يدعم تشغيل فيديو HTML5.",""],
+    "Choose an age group, watch official NASA Space Place videos right here, and test what you learned. The videos use NASA-hosted MP4 files, so the YouTube Error 153 player issue is avoided.": ["اختر الفئة العمرية، وشاهد فيديوهات ناسا التعليمية هنا، ثم اختبر ما تعلمته. تُشغَّل الفيديوهات من ملفات MP4 المستضافة لدى ناسا لتجنب مشكلة YouTube Error 153.",""],
+    "How Do We Launch Things Into Space?": ["كيف نطلق الأشياء إلى الفضاء؟",""],
+    "A friendly introduction to rockets, fuel, gravity, and how spacecraft leave Earth.": ["مقدمة مبسطة عن الصواريخ والوقود والجاذبية وكيف تغادر المركبات الفضائية الأرض.",""],
+    "What gives a rocket the push it needs to lift off?": ["ما الذي يمنح الصاروخ قوة الدفع اللازمة للإقلاع؟",""],
+    "Thrust from its engines": ["قوة الدفع الناتجة عن محركاته",""], "Wings like an airplane": ["أجنحة مثل الطائرة",""], "Light from the Moon": ["ضوء القمر",""],
+    "What Is a Solar Eclipse?": ["ما هو كسوف الشمس؟",""], "Discover what happens when the Moon moves between the Sun and Earth.": ["اكتشف ما يحدث عندما يمر القمر بين الشمس والأرض.",""],
+    "What moves between the Sun and Earth during a solar eclipse?": ["ما الذي يمر بين الشمس والأرض أثناء كسوف الشمس؟",""], "The Moon": ["القمر",""],
+    "How Much Water Is on Earth?": ["ما كمية المياه الموجودة على الأرض؟",""], "Explore oceans, ice, groundwater, and why water makes our planet special.": ["استكشف المحيطات والجليد والمياه الجوفية، وتعرّف لماذا تجعل المياه كوكبنا مميزًا.",""],
+    "About how much of Earth’s surface is covered by water?": ["ما النسبة التقريبية من سطح الأرض التي تغطيها المياه؟",""],
+    "How Many Moons Does Each Planet Have?": ["كم قمرًا لكل كوكب؟",""], "Take a tour of the moons orbiting planets across our solar system.": ["تعرّف على الأقمار التي تدور حول كواكب نظامنا الشمسي.",""],
+    "Which planet has just one natural moon?": ["أي كوكب له قمر طبيعي واحد فقط؟",""],
+    "Why Is the Sky Blue?": ["لماذا تبدو السماء زرقاء؟",""], "A colorful explanation of sunlight, the atmosphere, and scattering.": ["شرح مبسط لضوء الشمس والغلاف الجوي وتشتت الضوء.",""],
+    "Why does the sky usually look blue?": ["لماذا تبدو السماء زرقاء عادةً؟",""], "Air scatters blue light more": ["يشتت الهواء الضوء الأزرق بدرجة أكبر",""],
+    "What Is an Aurora?": ["ما الشفق القطبي؟",""], "Find out how the Sun and Earth’s magnetic field create glowing sky displays.": ["اكتشف كيف تُنتج الشمس والمجال المغناطيسي للأرض أضواء الشفق في السماء.",""],
+    "What helps guide charged particles toward the polar regions?": ["ما الذي يساعد في توجيه الجسيمات المشحونة نحو المناطق القطبية؟",""], "Earth’s magnetic field": ["المجال المغناطيسي للأرض",""],
+    "What Is a Nebula?": ["ما السديم؟",""], "Meet giant clouds of gas and dust where stars can form.": ["تعرّف على سحب هائلة من الغاز والغبار يمكن أن تتكوّن فيها النجوم.",""], "What is a nebula mainly made of?": ["ممّ يتكوّن السديم بشكل أساسي؟",""], "Gas and dust": ["الغاز والغبار",""],
+    "Where Does the Solar System End?": ["أين ينتهي النظام الشمسي؟",""], "Travel far beyond the planets and learn about the distant Oort Cloud.": ["انطلق إلى ما وراء الكواكب وتعرّف على سحابة أورت البعيدة.",""], "What icy objects may come from the Oort Cloud?": ["ما الأجسام الجليدية التي قد تأتي من سحابة أورت؟",""], "Some comets": ["بعض المذنبات",""],
+    "Searching for Other Planets Like Ours": ["البحث عن كواكب أخرى تشبه كوكبنا",""], "Learn how scientists look for planets orbiting stars beyond our Sun.": ["تعرّف على كيفية بحث العلماء عن كواكب تدور حول نجوم غير الشمس.",""], "What is an exoplanet?": ["ما الكوكب الخارجي؟",""], "A planet orbiting another star": ["كوكب يدور حول نجم آخر",""],
+    "Where Does the Sun’s Energy Come From?": ["من أين تأتي طاقة الشمس؟",""], "A deeper look at the Sun’s core and the nuclear fusion that powers it.": ["نظرة أعمق إلى لب الشمس والاندماج النووي الذي يمدها بالطاقة.",""], "Which process releases energy in the Sun’s core?": ["أي عملية تطلق الطاقة في لب الشمس؟",""], "Nuclear fusion": ["الاندماج النووي",""],
+    "What Is a Black Hole?": ["ما الثقب الأسود؟",""], "Explore extreme gravity, the event horizon, and what makes black holes unusual.": ["استكشف الجاذبية الشديدة وأفق الحدث وما يجعل الثقوب السوداء مميزة.",""], "What is the event horizon?": ["ما أفق الحدث؟",""], "The boundary beyond which light cannot escape": ["الحد الذي لا يستطيع الضوء الإفلات بعد تجاوزه",""],
+    "How Did the Solar System Form?": ["كيف تكوّن النظام الشمسي؟",""], "Follow the science of a collapsing cloud of gas and dust becoming the Sun and planets.": ["تعرّف على كيفية انهيار سحابة من الغاز والغبار وتحوّلها إلى الشمس والكواكب.",""], "About how long ago did our solar system begin forming?": ["منذ كم سنة تقريبًا بدأ تكوّن نظامنا الشمسي؟",""], "4.6 billion years ago": ["منذ 4.6 مليار سنة",""],
+    "Nebulae and Star Formation": ["السدم وتكوّن النجوم",""], "Go deeper into how gravity gathers interstellar gas and dust to begin forming stars.": ["تعمّق في فهم كيفية تجميع الجاذبية للغاز والغبار بين النجوم لبدء تكوّن النجوم.",""], "What can gravity do inside a nebula?": ["ماذا يمكن أن تفعل الجاذبية داخل السديم؟",""], "Pull gas and dust into denser clumps": ["تجمع الغاز والغبار في كتل أكثر كثافة",""],
+    "How Scientists Search for Exoplanets": ["كيف يبحث العلماء عن الكواكب الخارجية؟",""], "Learn about the transit method and how tiny changes in starlight reveal distant worlds.": ["تعرّف على طريقة العبور وكيف تكشف التغيرات الصغيرة في ضوء النجوم عن عوالم بعيدة.",""], "What can happen to a star’s brightness when a planet transits in front of it?": ["ماذا يحدث لسطوع النجم عندما يمر كوكب أمامه؟",""], "It dims slightly": ["يخفت قليلًا",""],
+    "Correct!": ["إجابة صحيحة!",""], "Incorrect!": ["إجابة خاطئة!",""], "Try again": ["حاول مرة أخرى",""], "Correct! You earned 5 Stars.": ["إجابة صحيحة! لقد ربحت 5 نجوم.",""],
+    "Correct! You earned 5 Stars.": ["إجابة صحيحة! لقد ربحت 5 نجوم.",""], "Good try! Hint: it is a gas giant with bright rings. Try again!": ["محاولة جيدة! تلميح: إنه عملاق غازي له حلقات لامعة. حاول مرة أخرى!",""],
+    "Daily challenge already claimed. Come back tomorrow!": ["لقد أكملت تحدي اليوم بالفعل. عُد غدًا!",""], "You discovered every planet in this bonus log!": ["لقد اكتشفت جميع الكواكب في سجل المكافآت هذا!",""], "Your first badge is waiting!": ["شارتك الأولى في انتظارك!",""],
+    "Gravity Detective": ["محقق الجاذبية",""], "Orbit Builder": ["مصمم المدارات",""], "Light Lab": ["مختبر الضوء",""], "Achievements": ["الإنجازات",""], "Keep exploring to build your explorer streak.": ["واصل الاستكشاف لبناء سلسلة إنجازاتك.",""],
+    "INTERACTIVE SIMULATION": ["محاكاة تفاعلية",""], "Gravity & Orbit Simulator": ["محاكي الجاذبية والمدار",""], "Change the planet's gravity and see how strongly it pulls a satellite. Increase gravity to tighten the orbit; decrease it to loosen the pull.": ["غيّر جاذبية الكوكب ولاحظ قوة جذب القمر الصناعي. زد الجاذبية لتضييق المدار، وقلّلها لتوسيع المدار.",""], "Gravity strength:": ["قوة الجاذبية:",""],
+    "High gravity: the pull is stronger, so the satellite needs more forward speed to stay in a stable orbit.": ["جاذبية مرتفعة: قوة الجذب أكبر، لذلك يحتاج القمر الصناعي إلى سرعة أمامية أكبر ليبقى في مدار مستقر.",""], "Low gravity: the pull is weaker, so the satellite follows a wider path and may drift away.": ["جاذبية منخفضة: قوة الجذب أضعف، لذلك يتبع القمر الصناعي مسارًا أوسع وقد يبتعد.",""], "Balanced gravity: the pull bends the satellite’s forward motion into an orbit around Earth.": ["جاذبية متوازنة: تجعل قوة الجذب حركة القمر الصناعي تنحني لتكوّن مدارًا حول الأرض.",""],
+    "Hello, cadet! 🚀 I’m Astro, your curious space buddy. Ask me about science, space, school topics, or everyday questions. What shall we explore?": ["مرحبًا أيها المستكشف! 🚀 أنا أسترو، صديقك الفضولي في الفضاء. اسألني عن العلوم أو الفضاء أو موضوعات الدراسة أو أي سؤال يومي. ماذا نكتشف اليوم؟",""],
+    "I’m Astro, the friendly guide aboard Astro Jr! I can explain ideas, share space facts, help you think through a question, and give you a mini-quiz.": ["أنا أسترو، مرشدك الودود في أسترو جونيور! أستطيع شرح الأفكار ومشاركة معلومات عن الفضاء ومساعدتك في التفكير والإجابة عن اختبار قصير.",""],
+    "Gravity is the attraction between objects that have mass. It keeps planets moving around the Sun and keeps us on the ground. The Moon’s surface gravity is about one-sixth of Earth’s.": ["الجاذبية هي قوة التجاذب بين الأجسام التي لها كتلة. إنها تُبقي الكواكب في مداراتها حول الشمس وتُبقينا على سطح الأرض. جاذبية سطح القمر تساوي نحو سدس جاذبية الأرض.",""],
+    "An orbit is the curved path one object follows around another. A satellite keeps moving forward while gravity continually bends its path, so it keeps falling around Earth instead of straight down.": ["المدار هو المسار المنحني الذي يسلكه جسم حول جسم آخر. يستمر القمر الصناعي في الحركة إلى الأمام بينما تغيّر الجاذبية اتجاه مساره باستمرار، فيظل يدور حول الأرض بدلًا من السقوط مباشرةً.",""],
+    "A black hole is a region of space where gravity is so strong that, past its event horizon, even light cannot escape. Scientists study black holes by observing their effects on nearby matter and light.": ["الثقب الأسود منطقة في الفضاء تكون جاذبيتها شديدة جدًا، بحيث لا يستطيع الضوء الإفلات بعد تجاوز أفق الحدث. يدرس العلماء الثقوب السوداء من خلال ملاحظة تأثيرها في المادة والضوء المحيطين بها.",""],
+    "The Sun is a star at the center of our Solar System. It releases energy through nuclear fusion in its core, giving Earth much of the light and warmth needed for life.": ["الشمس نجم يقع في مركز نظامنا الشمسي. تطلق الطاقة من خلال الاندماج النووي في لبها، وتمنح الأرض قدرًا كبيرًا من الضوء والدفء اللازمين للحياة.",""],
+    "Mars is a rocky planet often called the Red Planet because iron-rich minerals in its dust have rusted. It has giant volcanoes, polar ice, and evidence that liquid water once flowed on its surface.": ["المريخ كوكب صخري يُسمى غالبًا الكوكب الأحمر بسبب تأكسد المعادن الغنية بالحديد في غباره. ويضم براكين ضخمة وجليدًا قطبيًا وأدلة على جريان المياه السائلة على سطحه قديمًا.",""],
+    "The Moon is Earth’s natural satellite. Its phases happen because, as it orbits Earth, we see different portions of its half-lit side. The Moon does not make its own light; it reflects sunlight.": ["القمر هو التابع الطبيعي للأرض. تحدث أطواره لأننا نرى أجزاء مختلفة من نصفه المضاء أثناء دورانه حول الأرض. لا يصدر القمر ضوءًا من نفسه، بل يعكس ضوء الشمس.",""],
+    "Our Solar System has eight planets: Mercury, Venus, Earth, Mars, Jupiter, Saturn, Uranus, and Neptune. They all orbit the Sun. Pluto is classified as a dwarf planet.": ["يتكوّن نظامنا الشمسي من ثمانية كواكب: عطارد والزهرة والأرض والمريخ والمشتري وزحل وأورانوس ونبتون. تدور جميعها حول الشمس، ويُصنّف بلوتو كوكبًا قزمًا.",""],
+    "A rocket pushes hot exhaust backward. The exhaust pushes the rocket forward in the opposite direction. That is why rockets can work in space without needing air to push against.": ["يدفع الصاروخ الغازات الساخنة إلى الخلف، فتدفع هذه الغازات الصاروخ إلى الأمام في الاتجاه المعاكس. لذلك تستطيع الصواريخ العمل في الفضاء دون الحاجة إلى هواء تدفع نفسها ضده.",""],
+    "A star is a huge, glowing ball of hot gas (plasma) that produces energy in its core. Our Sun is the closest star to Earth. Other stars look tiny because they are extremely far away.": ["النجم كرة هائلة متوهجة من الغاز الساخن (البلازما) تنتج الطاقة في لبها. شمسنا أقرب النجوم إلى الأرض، وتبدو النجوم الأخرى صغيرة لأنها بعيدة جدًا.",""],
+    "A galaxy is a huge collection of stars, gas, dust, and dark matter held together by gravity. Our Solar System is inside the Milky Way galaxy.": ["المجرة تجمع هائل من النجوم والغاز والغبار والمادة المظلمة تربط بينها الجاذبية. يقع نظامنا الشمسي داخل مجرة درب التبانة.",""],
+    "Astro is listening!": ["أسترو يستمع إليك!",""], "Mini-quiz time, cadet! 🌟 Which planet is famous for its beautiful rings? A) Mars  B) Saturn  C) Mercury. Type A, B, or C and I’ll check your answer.": ["حان وقت الاختبار القصير! 🌟 أي كوكب يشتهر بحلقاته الجميلة؟ أ) المريخ  ب) زحل  ج) عطارد. اكتب أ أو ب أو ج وسأتحقق من إجابتك.",""],
+    "You’re welcome, cadet! Keep asking questions — curiosity is your superpower. ✨": ["على الرحب والسعة! واصل طرح الأسئلة، فالفضول هو قوتك الخارقة. ✨",""], "Absolutely! Tell me the topic and I’ll break it into small, clear steps, give you an example, and check your understanding.": ["بالتأكيد! أخبرني بالموضوع وسأقسمه إلى خطوات صغيرة وواضحة، وأقدم مثالًا، ثم أتحقق من فهمك.",""],
+    "That’s a thoughtful question, cadet! I don’t have a live AI brain connected in this browser-only version, so I may not know the exact answer yet. I can still help you explore it: try adding a little context or splitting it into smaller questions. For open-ended answers on any topic, connect a secure AI service through your own server using ASTROCADET_AI_ENDPOINT — never put a private API key in this file.": ["هذا سؤال رائع! لا يتصل هذا الإصدار الذي يعمل داخل المتصفح وحده بخدمة ذكاء اصطناعي مباشرة، لذلك قد لا أعرف الإجابة الدقيقة دائمًا. يمكنني مساعدتك في الاستكشاف؛ أضف بعض التفاصيل أو قسّم السؤال إلى أسئلة أصغر. للحصول على إجابات مفتوحة في أي موضوع، اربط خدمة ذكاء اصطناعي آمنة عبر خادمك باستخدام ASTROCADET_AI_ENDPOINT، ولا تضع مفتاح API سريًا داخل هذا الملف.",""],
+    "I’m listening, cadet! 🚀 I can chat about space and science, help explain a school topic, or make a mini-quiz. For a question outside my built-in guide, Astro needs a secure AI service connected through a backend.": ["أنا أستمع إليك! 🚀 يمكنني التحدث عن الفضاء والعلوم وشرح موضوع دراسي أو إعداد اختبار قصير. للإجابة عن سؤال خارج المعلومات المدمجة، يحتاج أسترو إلى ربط خدمة ذكاء اصطناعي آمنة من خلال خادم خلفي.",""]
   };
   DICT["This opens your email app with a ready message to "+EMAIL+"."]=["سيفتح هذا تطبيق البريد برسالة جاهزة إلى "+EMAIL+".","Esto abre tu app de correo con un mensaje listo para "+EMAIL+"."];
 
-  const IDX = { en:-1, ar:0, es:1 };
+  const IDX = { en:-1, ar:0 };
   const SKIP = { SCRIPT:1, STYLE:1, CANVAS:1, NOSCRIPT:1 };
   const ATTRS = ["placeholder","title","aria-label"];
   let lang = "en", busy = false, queued = false;
-  try { const v = localStorage.getItem("aj-lang"); if (IDX[v] !== undefined) lang = v; } catch (e) {}
+  try { const v = localStorage.getItem("aj-lang"); if (IDX[v] !== undefined) lang = v; else if (v === "es") lang = "en"; } catch (e) {}
 
   function pick(s) {                       // translate a string, or return it unchanged
     const e = DICT[s]; return e && e[IDX[lang]] ? e[IDX[lang]] : null;
@@ -6019,6 +6150,8 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     if (lang === "en") return src;
     const t = src.trim(); if (!t) return src;
     const lead = src.match(/^\s*/)[0], tail = src.match(/\s*$/)[0];
+    const cached = translatedCache.get(t);
+    if (cached) return lead + cached + tail;
     let r = pick(t);
     if (!r) {                              // ignore leading/trailing emoji, arrows and symbols
       const m = t.match(/^([^A-Za-z]*)([A-Za-z].*?)([^A-Za-z0-9.?!…'’):]*)$/);
@@ -6050,30 +6183,221 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     doAttrs(root);
     for (let c = root.firstChild; c; c = c.nextSibling) walk(c);
   }
-  function run(roots) { busy = true; try { roots.forEach(walk); } finally { obs.takeRecords(); busy = false; } }
+  // Translate every remaining visible English text/label, including content
+  // created later by missions, quizzes, activities, and Pip. The built-in
+  // dictionary is used first; this online fallback covers the long lesson text.
+  const translatedCache = new Map();
+  try { Object.entries(JSON.parse(localStorage.getItem("aj-ar-cache") || "{}")).forEach(([k,v]) => translatedCache.set(k,v)); } catch (_) {}
+  let fallbackQueue = new Set(), fallbackBusy = false;
+  const hasEnglish = s => /[A-Za-z]{2}/.test(s) && !/^https?:\/\//i.test(s);
+  function queueFallback(root) {
+    if (lang !== "ar" || !root) return;
+    const addText = n => {
+      if (!n || !n.isConnected || !n.parentNode || SKIP[n.parentNode.nodeName]) return;
+      if (n.parentElement && /^(SCRIPT|STYLE|NOSCRIPT|TEXTAREA|INPUT|CODE|PRE)$/i.test(n.parentElement.tagName)) return;
+      const src = n.__src !== undefined ? n.__src : n.data;
+      if (!src || !hasEnglish(src.trim()) || pick(src.trim()) || translatedCache.has(src.trim())) return;
+      fallbackQueue.add({ node:n, src, kind:"text" });
+    };
+    const addAttr = el => {
+      if (!el || !el.isConnected) return;
+      for (const a of ATTRS) {
+        if (!el.hasAttribute(a)) continue;
+        const rec = el.__a && el.__a[a];
+        const src = rec ? rec.src : el.getAttribute(a);
+        if (src && hasEnglish(src.trim()) && !pick(src.trim()) && !translatedCache.has(src.trim())) fallbackQueue.add({ node:el, src, kind:a });
+      }
+    };
+    if (root.nodeType === 3) addText(root);
+    else if (root.nodeType === 1) {
+      addAttr(root);
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let n; while ((n = walker.nextNode())) addText(n);
+      root.querySelectorAll && root.querySelectorAll("*").forEach(addAttr);
+    }
+    pumpFallback();
+  }
+  async function pumpFallback() {
+    if (fallbackBusy || lang !== "ar") return;
+    fallbackBusy = true;
+    try {
+      while (fallbackQueue.size && lang === "ar") {
+        const batch = [...fallbackQueue].slice(0, 5);
+        batch.forEach(x => fallbackQueue.delete(x));
+        await Promise.all(batch.map(async x => {
+          const key = x.src.trim();
+          try {
+            let out = translatedCache.get(key);
+            if (!out) {
+              const url = "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=" + encodeURIComponent(key);
+              const res = await fetch(url);
+              if (!res.ok) throw new Error("translation unavailable");
+              const data = await res.json();
+              out = Array.isArray(data[0]) ? data[0].map(part => part[0] || "").join("") : "";
+              if (!out) return;
+              translatedCache.set(key, out);
+              try { localStorage.setItem("aj-ar-cache", JSON.stringify(Object.fromEntries(translatedCache))); } catch (_) {}
+            }
+            if (lang !== "ar" || !x.node.isConnected) return;
+            if (x.kind === "text") {
+              const current = x.node.__src !== undefined ? x.node.__src : x.node.data;
+              if (current === x.src) { x.node.__src = x.src; x.node.__out = out; x.node.data = x.src.replace(/^\s*/, "") === key ? x.src.replace(key, out) : out; }
+            } else {
+              const rec = x.node.__a && x.node.__a[x.kind];
+              if (rec && rec.src === x.src) { rec.out = out; x.node.setAttribute(x.kind, out); }
+            }
+          } catch (_) { /* Keep original text if the device is offline. */ }
+        }));
+      }
+    } finally { fallbackBusy = false; }
+  }
+  function run(roots) {
+    busy = true;
+    try { roots.forEach(walk); }
+    finally { obs.takeRecords(); busy = false; }
+    if (lang === "ar") roots.forEach(queueFallback);
+  }
+
+  // Translate every visible English string that is not already in DICT.
+  // This is a real online translation fallback, not a partial word replacement.
+  const cache = new Map();
+  try {
+    const saved = JSON.parse(localStorage.getItem("aj-ar-cache-v2") || "{}");
+    Object.entries(saved).forEach(([k,v]) => { if (typeof v === "string" && v) cache.set(k,v); });
+  } catch (_) {}
+  let queue = new Map(), pumping = false;
+  const isEnglish = s => /[A-Za-z]{2}/.test(s) && !/^https?:\/\//i.test(s);
+  const ignored = el => !el || /^(SCRIPT|STYLE|NOSCRIPT|CANVAS|CODE|PRE|TEXTAREA)$/i.test(el.tagName);
+
+  function rememberText(node) {
+    if (!node || !node.isConnected || !node.parentElement || ignored(node.parentElement)) return;
+    const src = node.__src !== undefined ? node.__src : node.data;
+    const key = (src || "").trim();
+    if (!key || !isEnglish(key) || pick(key) || cache.has(key)) return;
+    queue.set(node, {node, src, key, kind:"text"});
+  }
+  function rememberAttr(el) {
+    if (!el || !el.isConnected || ignored(el)) return;
+    for (const attr of ATTRS) {
+      if (!el.hasAttribute(attr)) continue;
+      const rec = el.__a && el.__a[attr];
+      const src = rec ? rec.src : el.getAttribute(attr);
+      const key = (src || "").trim();
+      if (!key || !isEnglish(key) || pick(key) || cache.has(key)) continue;
+      queue.set(el, {node:el, src, key, kind:attr});
+    }
+  }
+  function collect(root) {
+    if (!root || lang !== "ar") return;
+    if (root.nodeType === 3) rememberText(root);
+    else if (root.nodeType === 1 && !ignored(root)) {
+      rememberAttr(root);
+      const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
+      let node;
+      while ((node = walker.nextNode())) rememberText(node);
+      if (root.querySelectorAll) root.querySelectorAll("*").forEach(rememberAttr);
+    }
+    pump();
+  }
+  async function translateOnline(text) {
+    const q = encodeURIComponent(text);
+    const urls = [
+      "https://translate.googleapis.com/translate_a/single?client=gtx&sl=en&tl=ar&dt=t&q=" + q,
+      "https://api.mymemory.translated.net/get?q=" + q + "&langpair=en%7Car"
+    ];
+    for (const url of urls) {
+      try {
+        const response = await fetch(url, {method:"GET", mode:"cors", cache:"force-cache"});
+        if (!response.ok) continue;
+        const data = await response.json();
+        let result = "";
+        if (Array.isArray(data) && Array.isArray(data[0])) result = data[0].map(part => part[0] || "").join("");
+        else if (data && data.responseData) result = data.responseData.translatedText || "";
+        result = result.replace(/&amp;/g,"&").replace(/&#39;/g,"'").trim();
+        if (result && /[\u0600-\u06FF]/.test(result)) return result;
+      } catch (_) {}
+    }
+    return "";
+  }
+  function applyTranslation(item, result) {
+    const {node, src, key, kind} = item;
+    if (!result || lang !== "ar" || !node.isConnected) return;
+    if (kind === "text") {
+      const current = node.__src !== undefined ? node.__src : node.data;
+      if (current === src || current === key) {
+        const lead = (src.match(/^\s*/) || [""])[0];
+        const tail = (src.match(/\s*$/) || [""])[0];
+        node.__src = src;
+        node.__out = lead + result + tail;
+        node.data = node.__out;
+      }
+    } else {
+      node.__a = node.__a || {};
+      const rec = node.__a[kind];
+      if (!rec || rec.src === src || node.getAttribute(kind) === src) {
+        node.__a[kind] = {src, out:result};
+        node.setAttribute(kind, result);
+      }
+    }
+  }
+  async function pump() {
+    if (pumping || lang !== "ar") return;
+    pumping = true;
+    try {
+      while (queue.size && lang === "ar") {
+        const batch = [...queue.values()].slice(0, 3);
+        batch.forEach(item => queue.delete(item.node));
+        await Promise.all(batch.map(async item => {
+          let result = cache.get(item.key);
+          if (!result) {
+            result = await translateOnline(item.key);
+            if (result) {
+              cache.set(item.key, result);
+              try { localStorage.setItem("aj-ar-cache-v2", JSON.stringify(Object.fromEntries(cache))); } catch (_) {}
+            }
+          }
+          applyTranslation(item, result);
+        }));
+      }
+    } finally { pumping = false; }
+  }
 
   const pending = new Set();
-  const obs = new MutationObserver(recs => {
+  const obs = new MutationObserver(records => {
     if (busy) return;
-    for (const r of recs) pending.add(r.type === "childList" ? r.target : r.target);
-    if (queued) return; queued = true;
-    requestAnimationFrame(() => { queued = false; const l = [...pending]; pending.clear(); run(l); });
+    records.forEach(record => pending.add(record.target));
+    if (queued) return;
+    queued = true;
+    requestAnimationFrame(() => {
+      queued = false;
+      const roots = [...pending]; pending.clear();
+      busy = true;
+      try { roots.forEach(root => { if (root.nodeType === 3) doText(root); else if (root.nodeType === 1) walk(root); }); }
+      finally { obs.takeRecords(); busy = false; }
+      if (lang === "ar") roots.forEach(collect);
+    });
   });
 
   function setLang(l) {
+    if (l !== "ar" && l !== "en") l = "en";
     lang = l;
     try { localStorage.setItem("aj-lang", l); } catch (e) {}
     document.documentElement.lang = l;
     document.documentElement.dir = l === "ar" ? "rtl" : "ltr";
     document.querySelectorAll(".langs button").forEach(b => {
-      const on = b.dataset.lang === l; b.classList.toggle("on", on); b.setAttribute("aria-pressed", on);
+      const on = b.dataset.lang === l;
+      b.classList.toggle("on", on);
+      b.setAttribute("aria-pressed", on ? "true" : "false");
     });
+    // Restore original English first, then apply known Arabic and translate all remaining text.
     run([document.body]);
+    if (l === "ar") collect(document.body);
+    if (window.AstroCadet && AstroCadet.Talk) AstroCadet.Talk.voice = AstroCadet.Talk.pickVoice();
   }
-
-  document.addEventListener("click", e => {
-    const b = e.target.closest && e.target.closest(".langs button[data-lang]");
-    if (b) setLang(b.dataset.lang);
+  window.AstroLanguage = { get: () => lang, translate, set: setLang };
+  document.addEventListener("click", event => {
+    const button = event.target.closest && event.target.closest(".langs button[data-lang]");
+    if (button) setLang(button.dataset.lang);
   });
 
   // complaint form -> opens the email app addressed to the complaints inbox
@@ -6083,7 +6407,7 @@ if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',
     const n = document.getElementById("cpName").value.trim();
     const f = document.getElementById("cpEmail").value.trim();
     const t = document.getElementById("cpText").value.trim();
-    const subj = { en:"Complaint from ", ar:"شكوى من ", es:"Queja de " }[lang] + n;
+    const subj = { en:"Complaint from ", ar:"شكوى من " }[lang] + n;
     location.href = "mailto:" + EMAIL + "?subject=" + encodeURIComponent(subj) +
       "&body=" + encodeURIComponent(t + "\n\n" + n + "\n" + f);
   });

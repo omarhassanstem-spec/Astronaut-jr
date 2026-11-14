@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar" dir="rtl">
 <head><meta charset="UTF-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
 <meta name="theme-color" content="#060a18" />
@@ -31,7 +31,7 @@
       </span>
     </button>
     <div class="hud">
-      <div class="langs langs-top" role="group" aria-label="Language"><button type="button" data-lang="ar">العربية</button><button type="button" data-lang="en">English</button><button type="button" data-lang="es">Español</button></div>
+      <div class="langs langs-top" role="group" aria-label="Language"><button type="button" data-lang="ar">العربية</button><button type="button" data-lang="en">English</button></div>
       <div class="hud-stat" title="Stars you have earned">
         <span class="hud-ico" aria-hidden="true">★</span>
         <span><b id="hudStars">0</b><small>stars</small></span>
@@ -208,7 +208,7 @@
         <path d="M21 38l3 7 3-7" fill="#ff9d3d"/>
       </svg>
     </div>
-    <div class="langs-auth"><div class="langs " role="group" aria-label="Language"><button type="button" data-lang="ar">العربية</button><button type="button" data-lang="en">English</button><button type="button" data-lang="es">Español</button></div></div>
+    <div class="langs-auth"><div class="langs " role="group" aria-label="Language"><button type="button" data-lang="ar">العربية</button><button type="button" data-lang="en">English</button></div></div>
     <div class="auth-brand">Astronaut Jr</div>
     <div class="auth-kicker">Space Academy</div>
 
@@ -226,8 +226,8 @@
         <input id="authUser" type="text" maxlength="64" placeholder="Username or email" autocomplete="username" autocapitalize="none" autocorrect="off" spellcheck="false" />
       </div>
       <div class="field" id="authEmailWrap" hidden>
-        <label for="authEmail">Email (optional)</label>
-        <input id="authEmail" type="email" maxlength="64" placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck="false" />
+        <label for="authEmail">Email address (required)</label>
+        <input id="authEmail" type="email" maxlength="64" placeholder="you@example.com" autocomplete="email" autocapitalize="none" spellcheck="false" required />
       </div>
       <div class="field">
         <label for="authPass">Secret code</label>
